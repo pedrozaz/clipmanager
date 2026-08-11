@@ -83,3 +83,59 @@ pub fn init_in_memory_db() -> Result<Connection> {
     conn.execute_batch(MIGRATIONS_SQL)?;
     Ok(conn)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_init_in_memory_db() {
+        let conn = init_in_memory_db().expect("in-memory db initialization failed");
+        let count: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM sqlite_master WHERE type='table'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("failed to query table count");
+        assert!(count >= 6);
+    }
+
+    #[test]
+    fn test_foreign_key_cascade() {
+        let conn = init_in_memory_db().expect("in-memory db initialization failed");
+        conn.execute("PRAGMA foreign_keys = ON;", []).unwrap();
+
+        conn.execute(
+            "INSERT INTO clips (title, status) VALUES ('Test Clip', 'novo')",
+            [],
+        )
+        .unwrap();
+        let clip_id = conn.last_insert_rowid();
+
+        conn.execute(
+            "INSERT INTO categories (name, color) VALUES ('Highlight', '#ff0000')",
+            [],
+        )
+        .unwrap();
+        let cat_id = conn.last_insert_rowid();
+
+        conn.execute(
+            "INSERT INTO clip_categories (clip_id, category_id) VALUES (?1, ?2)",
+            [clip_id, cat_id],
+        )
+        .unwrap();
+
+        conn.execute("DELETE FROM clips WHERE id = ?1", [clip_id])
+            .unwrap();
+
+        let count: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM clip_categories WHERE clip_id = ?1",
+                [clip_id],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(count, 0);
+    }
+}
