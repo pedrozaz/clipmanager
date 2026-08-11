@@ -4,17 +4,13 @@
   width: 100vw;
   height: 100vh;
   background-color: var(--color-bg-primary);
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(168, 85, 247, 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.06) 0px, transparent 50%);
+  color: var(--color-text-primary);
   overflow: hidden;
 }
 
 .sidebar {
-  width: 260px;
-  background: rgba(14, 14, 23, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  width: 250px;
+  background-color: var(--color-bg-surface);
   border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
@@ -26,16 +22,13 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  gap: var(--space-sm);
   padding: 0 var(--space-xs);
 }
 
 .brand-icon {
   font-size: 1.8rem;
-  background: var(--gradient-accent);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 8px rgba(168, 85, 247, 0.4));
+  line-height: 1;
 }
 
 .brand-text {
@@ -47,60 +40,48 @@
   font-weight: 800;
   font-size: 1.15rem;
   letter-spacing: -0.02em;
-  background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--color-text-primary);
 }
 
 .brand-tag {
   font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--color-accent);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--color-valorant);
+  text-transform: uppercase;
 }
 
 .nav-list {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: 6px;
 }
 
 .nav-item a {
   display: flex;
   align-items: center;
   gap: var(--space-md);
-  padding: 12px 16px;
+  padding: 11px 16px;
   border-radius: var(--radius-md);
   color: var(--color-text-secondary);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   transition: all var(--transition-fast);
-  position: relative;
+  text-decoration: none;
+  border: 1px solid transparent;
 }
 
 .nav-item a:hover {
-  background: var(--color-bg-hover);
+  background-color: var(--color-bg-hover);
   color: var(--color-text-primary);
-  transform: translateX(2px);
+  border-color: var(--color-border);
 }
 
 .nav-item a.active {
-  background: var(--color-accent-light);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border-glow);
-  box-shadow: var(--shadow-glow);
-}
-
-.nav-item a.active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 25%;
-  bottom: 25%;
-  width: 4px;
-  border-radius: var(--radius-full);
-  background: var(--gradient-accent);
+  background-color: rgba(145, 70, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(145, 70, 255, 0.4);
 }
 
 .nav-icon {
@@ -116,8 +97,8 @@
 .footer-badge {
   display: inline-block;
   padding: 4px 10px;
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-bg-input);
   border: 1px solid var(--color-border);
   font-size: 0.75rem;
   font-family: var(--font-mono);
@@ -130,6 +111,7 @@
   padding: var(--space-xl);
   display: flex;
   flex-direction: column;
+  background-color: var(--color-bg-primary);
 }
 
 /* Custom Scrollbar */
@@ -139,14 +121,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--color-bg-primary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-full);
+  background: var(--color-border);
+  border-radius: var(--radius-sm);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(168, 85, 247, 0.4);
+  background: var(--color-border-hover);
 }
