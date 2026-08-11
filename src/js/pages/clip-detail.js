@@ -21,6 +21,18 @@ export async function renderClipDetail(container, clipId) {
     return;
   }
 
+  let analyticsHistory = [];
+  try {
+    analyticsHistory = await api.getAnalyticsHistory(clipId);
+  } catch(_) {}
+
+  const latestYt = Array.isArray(analyticsHistory) && analyticsHistory.length > 0
+    ? analyticsHistory[analyticsHistory.length - 1]
+    : null;
+
+  const twitchViews = currentClip.views || 0;
+  const youtubeViews = latestYt ? (latestYt.views || 0) : 0;
+  const totalViews = twitchViews + youtubeViews;
   const clipCategories = (allCategories || []).filter(c => currentClip.category_ids && currentClip.category_ids.includes(c.id));
 
   container.innerHTML = `
@@ -78,14 +90,59 @@ export async function renderClipDetail(container, clipId) {
         </div>
 
         <div class="section-card">
-          <h3>Métricas</h3>
-          <p class="section-desc">Estatísticas sincronizadas das plataformas</p>
-          <div class="metrics-row mb-3">
-            <div class="metric-card"><div class="metric-label">Visualizações</div><div class="metric-value">${currentClip.views || 0}</div></div>
-            <div class="metric-card"><div class="metric-label">Curtidas</div><div class="metric-value">${currentClip.likes || 0}</div></div>
-            <div class="metric-card"><div class="metric-label">Comentários</div><div class="metric-value">${currentClip.comments || 0}</div></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-4);">
+            <div>
+              <h3 style="margin:0;">Métricas de Desempenho</h3>
+              <p class="section-desc" style="margin:0;">Estatísticas consolidadas por plataforma</p>
+            </div>
+            ${currentClip.youtube_url ? `
+              <button id="btn-sync-stats" class="btn btn-secondary btn-sm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                Sincronizar YouTube
+              </button>
+            ` : ''}
           </div>
-          <button id="btn-sync-stats" class="btn btn-secondary">Sincronizar Estatísticas</button>
+
+          <div class="metrics-row mb-4">
+            <div class="metric-card" style="border-left: 3px solid var(--accent-primary);">
+              <div class="metric-label">Total Acumulado</div>
+              <div class="metric-value">${totalViews.toLocaleString('pt-BR')} <span style="font-size:12px; font-weight:normal; color:var(--text-muted);">views</span></div>
+            </div>
+            <div class="metric-card" style="border-left: 3px solid #9146ff;">
+              <div class="metric-label">Views (Twitch)</div>
+              <div class="metric-value">${twitchViews.toLocaleString('pt-BR')}</div>
+            </div>
+            <div class="metric-card" style="border-left: 3px solid #ff4444;">
+              <div class="metric-label">Views (YouTube)</div>
+              <div class="metric-value">${latestYt ? youtubeViews.toLocaleString('pt-BR') : (currentClip.youtube_url ? '0' : '-')}</div>
+            </div>
+          </div>
+
+          ${currentClip.youtube_url ? `
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4);">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom: 12px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#ff4444"><path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.2 2.8 12 2.8 12 2.8s-4.2 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.2v2c0 2.1.3 4.2.3 4.2s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.2 21.6 12 21.6 12 21.6s4.2 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.1.3-4.2v-2C23.3 9.1 23 7 23 7zM9.7 15.5V8.4l8.1 3.6-8.1 3.5z"/></svg>
+                <span style="font-size:13px; font-weight:600; color:var(--text-primary);">Métricas do YouTube Shorts</span>
+                ${latestYt?.fetched_at ? `<span style="font-size:11px; color:var(--text-muted); margin-left:auto;">Sincronizado em ${new Date(latestYt.fetched_at).toLocaleString('pt-BR')}</span>` : ''}
+              </div>
+              <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align:center;">
+                <div>
+                  <div style="font-size:11px; color:var(--text-muted);">Visualizações</div>
+                  <div style="font-size:16px; font-weight:700; color:var(--text-primary);">${latestYt ? (latestYt.views || 0).toLocaleString('pt-BR') : 0}</div>
+                </div>
+                <div>
+                  <div style="font-size:11px; color:var(--text-muted);">Curtidas</div>
+                  <div style="font-size:16px; font-weight:700; color:var(--text-primary);">${latestYt ? (latestYt.likes || 0).toLocaleString('pt-BR') : 0}</div>
+                </div>
+                <div>
+                  <div style="font-size:11px; color:var(--text-muted);">Comentários</div>
+                  <div style="font-size:16px; font-weight:700; color:var(--text-primary);">${latestYt ? (latestYt.comments || 0).toLocaleString('pt-BR') : 0}</div>
+                </div>
+              </div>
+            </div>
+          ` : `
+            <p class="text-muted text-sm" style="margin:0;">Vinculando um link de YouTube Shorts acima, você poderá sincronizar e acompanhar curtidas, comentários e métricas do YouTube.</p>
+          `}
         </div>
       </div>
 
@@ -198,7 +255,7 @@ function setupEventListeners(clipId) {
   });
 
   // Sync Stats
-  document.getElementById('btn-sync-stats').addEventListener('click', async () => {
+  document.getElementById('btn-sync-stats')?.addEventListener('click', async () => {
     try {
       showToast('Sincronizando estatísticas...', 'info');
       await api.fetchYoutubeAnalytics(clipId);
