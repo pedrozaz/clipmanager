@@ -25,6 +25,15 @@ function getTwitchEmbedUrl(clip) {
   return null;
 }
 
+function getYoutubeEmbedUrl(youtubeUrl) {
+  if (!youtubeUrl) return null;
+  const match = youtubeUrl.match(/(?:youtube\.com\/shorts\/|youtu\.be\/|youtube\.com\/watch\?v=)([A-Za-z0-9_-]+)/);
+  if (match && match[1]) {
+    return `https://www.youtube.com/embed/${match[1]}`;
+  }
+  return null;
+}
+
 export async function renderClipDetail(container, clipId) {
   try {
     currentClip = await api.getClip(clipId);
@@ -57,7 +66,38 @@ export async function renderClipDetail(container, clipId) {
   const youtubeViews = latestYt ? (latestYt.views || 0) : 0;
   const totalViews = twitchViews + youtubeViews;
   const clipCategories = (allCategories || []).filter(c => currentClip.category_ids && currentClip.category_ids.includes(c.id));
-  const embedUrl = getTwitchEmbedUrl(currentClip);
+  
+  const twitchEmbedUrl = getTwitchEmbedUrl(currentClip);
+  const ytEmbedUrl = getYoutubeEmbedUrl(currentClip.youtube_url);
+
+  const renderMediaPlayers = () => {
+    let html = '';
+    if (twitchEmbedUrl) {
+      html += `
+        <div class="section-card mb-4" style="padding:0; overflow:hidden; border-radius: var(--radius-lg); background:#000; border: 1px solid var(--border-subtle);">
+          <div style="position:relative; padding-bottom:56.25%; height:0; width:100%;">
+            <iframe src="${twitchEmbedUrl}" height="100%" width="100%" style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" allowfullscreen="true"></iframe>
+          </div>
+        </div>
+      `;
+    }
+    if (ytEmbedUrl) {
+      html += `
+        <div class="section-card mb-4" style="padding: 16px; border-radius: var(--radius-lg); background: var(--bg-surface); border: 1px solid var(--border-subtle);">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom: 14px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#ff4444"><path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.2 2.8 12 2.8 12 2.8s-4.2 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.2v2c0 2.1.3 4.2.3 4.2s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.2 21.6 12 21.6 12 21.6s4.2 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.1.3-4.2v-2C23.3 9.1 23 7 23 7zM9.7 15.5V8.4l8.1 3.6-8.1 3.5z"/></svg>
+            <h3 style="margin:0; font-size: 14px; color: var(--text-primary);">YouTube Shorts</h3>
+          </div>
+          <div style="max-width: 380px; margin: 0 auto; background:#000; border-radius: var(--radius-md); overflow:hidden; border: 1px solid var(--border-subtle);">
+            <div style="position:relative; padding-bottom:177.77%; height:0; width:100%;">
+              <iframe src="${ytEmbedUrl}" height="100%" width="100%" style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" allowfullscreen="true"></iframe>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    return html;
+  };
 
   container.innerHTML = `
     <div class="page-header d-flex justify-content-between">
@@ -74,19 +114,7 @@ export async function renderClipDetail(container, clipId) {
 
     <div class="clip-detail-grid">
       <div class="main-column">
-        ${embedUrl ? `
-          <div class="section-card mb-4" style="padding:0; overflow:hidden; border-radius: var(--radius-lg); background:#000; border: 1px solid var(--border-subtle);">
-            <div style="position:relative; padding-bottom:56.25%; height:0; width:100%;">
-              <iframe
-                src="${embedUrl}"
-                height="100%"
-                width="100%"
-                style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;"
-                allowfullscreen="true">
-              </iframe>
-            </div>
-          </div>
-        ` : ''}
+        ${renderMediaPlayers()}
         <div class="section-card mb-4">
           <div class="form-group">
             <label>Título do Clipe</label>
