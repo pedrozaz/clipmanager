@@ -21,6 +21,8 @@ rusqlite = { version = "0.40.2", features = ["bundled"] }
 reqwest = { version = "0.13", default-features = false, features = [
   "json",
   "rustls",
+  "form",
+  "query",
 ] }
 tokio = { version = "1", features = ["full"] }
 chrono = { version = "0.4.45", features = ["serde"] }

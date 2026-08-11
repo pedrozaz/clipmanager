@@ -27,4 +27,8 @@ export const api = {
   getSetting: (key) => invoke("get_setting", { key }),
   setSetting: (key, value) => invoke("set_setting", { key, value }),
   listSettings: () => invoke("list_settings"),
+
+  // Import & API Integration
+  importTwitchClips: (daysBack = 30) => invoke("import_twitch_clips", { daysBack: Number(daysBack) }),
+  testTwitchConnection: () => invoke("test_twitch_connection"),
 };

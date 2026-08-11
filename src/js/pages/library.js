@@ -4,7 +4,7 @@ import { renderClipCard, renderClipRow } from "../components/clip-card.js";
 import { openModal } from "../components/modal.js";
 import { showToast } from "../components/toast.js";
 
-let currentViewMode = "grid"; // "grid" | "list"
+let currentViewMode = "grid";
 let clipsList = [];
 let categoriesList = [];
 
@@ -40,6 +40,7 @@ function setupFilterEvents(container) {
   const sortByFilter = document.getElementById("sort-by-filter");
   const gridBtn = document.getElementById("view-grid-btn");
   const listBtn = document.getElementById("view-list-btn");
+  const importTwitchBtn = document.getElementById("import-twitch-btn");
   const newClipBtn = document.getElementById("new-clip-btn");
 
   let debounceTimer;
@@ -66,6 +67,7 @@ function setupFilterEvents(container) {
     renderClipsDisplay();
   });
 
+  importTwitchBtn?.addEventListener("click", handleImportTwitchClips);
   newClipBtn?.addEventListener("click", handleCreateNewClip);
 }
 
@@ -132,6 +134,49 @@ function renderClipsDisplay() {
       </div>
     `;
   }
+
+  document.querySelectorAll(".clip-card, .btn-detail").forEach(elem => {
+    elem.addEventListener("click", (e) => {
+      const clipId = elem.getAttribute("data-clip-id") || elem.getAttribute("data-id");
+      if (clipId) {
+        window.location.hash = `#/clip/${clipId}`;
+      }
+    });
+  });
+}
+
+function handleImportTwitchClips() {
+  openModal({
+    title: "💜 Importar Clipes da Twitch",
+    confirmText: "Iniciar Importação",
+    contentHtml: `
+      <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 12px;">
+        O app irá buscar os clipes da sua conta da Twitch e importar os que ainda não foram salvos.
+      </p>
+      <div class="form-group">
+        <label for="import-days-select">Período de busca</label>
+        <select id="import-days-select">
+          <option value="7">Últimos 7 dias</option>
+          <option value="30" selected>Últimos 30 dias</option>
+          <option value="90">Últimos 90 dias</option>
+          <option value="365">Último ano</option>
+        </select>
+      </div>
+    `,
+    onConfirm: async () => {
+      const days = document.getElementById("import-days-select")?.value || "30";
+      showToast("Buscando clipes na API da Twitch...", "info");
+      try {
+        const res = await api.importTwitchClips(days);
+        showToast(`Importação concluída! ${res.imported} novos clipes, ${res.skipped} já existiam.`, "success");
+        await loadAndRenderClips();
+        return true;
+      } catch (err) {
+        showToast(`Erro na importação: ${err}`, "error");
+        return false;
+      }
+    }
+  });
 }
 
 function handleCreateNewClip() {

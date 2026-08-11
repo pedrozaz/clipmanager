@@ -35,7 +35,10 @@ export async function renderSettingsPage(container) {
           <label for="setting-twitch-username">Seu Nome de Usuário na Twitch</label>
           <input type="text" id="setting-twitch-username" value="${settingsMap['twitch_username'] || ''}" placeholder="Ex: streamername" />
         </div>
-        <button id="save-twitch-btn" class="btn btn-primary">Salvar Credenciais Twitch</button>
+        <div class="button-group" style="display: flex; gap: 8px;">
+          <button id="save-twitch-btn" class="btn btn-primary">Salvar Credenciais Twitch</button>
+          <button id="test-twitch-btn" class="btn btn-secondary">⚡ Testar Conexão</button>
+        </div>
       </div>
 
       <div class="settings-card">
@@ -105,6 +108,16 @@ function setupSettingsEvents(container) {
       showToast("Configurações da Twitch salvas!", "success");
     } catch (err) {
       showToast(`Erro ao salvar: ${err}`, "error");
+    }
+  });
+
+  document.getElementById("test-twitch-btn")?.addEventListener("click", async () => {
+    showToast("Testando conexão com a Twitch...", "info");
+    try {
+      const res = await api.testTwitchConnection();
+      showToast(res, "success");
+    } catch (err) {
+      showToast(`Falha na conexão: ${err}`, "error");
     }
   });
 

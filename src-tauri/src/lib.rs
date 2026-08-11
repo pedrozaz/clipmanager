@@ -1,3 +1,4 @@
+pub mod api;
 pub mod commands;
 pub mod db;
 pub mod errors;
@@ -43,6 +44,8 @@ pub fn run() {
             commands::settings::get_setting,
             commands::settings::set_setting,
             commands::settings::list_settings,
+            commands::import::import_twitch_clips,
+            commands::import::test_twitch_connection,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

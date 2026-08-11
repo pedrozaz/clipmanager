@@ -34,6 +34,7 @@ export function renderFilterBar(categories = []) {
           <button id="view-list-btn" class="btn-toggle" title="Visualização em Lista">📋 Lista</button>
         </div>
 
+        <button id="import-twitch-btn" class="btn btn-secondary" style="border: 1px solid var(--color-accent); color: var(--color-accent);">💜 Importar da Twitch</button>
         <button id="new-clip-btn" class="btn btn-primary">➕ Novo Clipe</button>
       </div>
     </div>
