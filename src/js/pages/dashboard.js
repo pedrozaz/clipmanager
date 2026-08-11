@@ -1,4 +1,4 @@
-import * as api from '../bridge.js';
+import { api } from '../bridge.js';
 import { createBarChart, createDoughnutChart } from '../components/chart.js';
 import { showToast } from '../components/toast.js';
 

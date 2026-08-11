@@ -1,4 +1,4 @@
-import * as api from '../bridge.js';
+import { api } from '../bridge.js';
 import { renderFilterBar } from '../components/filter-bar.js';
 import { renderClipCard, renderClipRow } from '../components/clip-card.js';
 import { showModal } from '../components/modal.js';

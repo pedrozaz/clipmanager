@@ -1,4 +1,4 @@
-import * as api from '../bridge.js';
+import { api } from '../bridge.js';
 import { renderStatusBadge } from '../components/status-badge.js';
 import { renderCategoryTag } from '../components/category-tag.js';
 import { showModal } from '../components/modal.js';

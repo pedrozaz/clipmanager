@@ -1,4 +1,4 @@
-import * as api from '../bridge.js';
+import { api } from '../bridge.js';
 import { showModal } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
 
@@ -95,39 +95,50 @@ export async function renderSettings(container) {
   // Event Listeners
   document.getElementById('save-twitch-btn').addEventListener('click', async () => {
     try {
-      await api.saveSettings('twitch', {
-        clientId: document.getElementById('twitch-client-id').value,
-        clientSecret: document.getElementById('twitch-client-secret').value,
-        broadcaster: document.getElementById('twitch-broadcaster').value
-      });
+      const clientId = document.getElementById('twitch-client-id').value;
+      const clientSecret = document.getElementById('twitch-client-secret').value;
+      const broadcaster = document.getElementById('twitch-broadcaster').value;
+
+      await api.setSetting('twitch_client_id', clientId);
+      await api.setSetting('twitch_client_secret', clientSecret);
+      await api.setSetting('twitch_username', broadcaster);
+
       showToast('Configurações da Twitch salvas', 'success');
     } catch(e) {
-      showToast('Erro ao salvar Twitch', 'error');
+      console.error('Save Twitch error:', e);
+      showToast('Erro ao salvar Twitch: ' + (e.message || e), 'error');
     }
   });
 
   document.getElementById('save-youtube-btn').addEventListener('click', async () => {
     try {
-      await api.saveSettings('youtube', {
-        apiKey: document.getElementById('youtube-api-key').value,
-        channelId: document.getElementById('youtube-channel-id').value
-      });
+      const apiKey = document.getElementById('youtube-api-key').value;
+      const channelId = document.getElementById('youtube-channel-id').value;
+
+      await api.setSetting('youtube_api_key', apiKey);
+      await api.setSetting('youtube_channel_id', channelId);
+
       showToast('Configurações do YouTube salvas', 'success');
     } catch(e) {
-      showToast('Erro ao salvar YouTube', 'error');
+      console.error('Save YouTube error:', e);
+      showToast('Erro ao salvar YouTube: ' + (e.message || e), 'error');
     }
   });
 
   document.getElementById('save-valorant-btn').addEventListener('click', async () => {
     try {
-      await api.saveSettings('valorant', {
-        apiKey: document.getElementById('valorant-api-key').value,
-        name: document.getElementById('valorant-name').value,
-        tag: document.getElementById('valorant-tag').value
-      });
+      const apiKey = document.getElementById('valorant-api-key').value;
+      const name = document.getElementById('valorant-name').value;
+      const tag = document.getElementById('valorant-tag').value;
+      const riotId = tag ? `${name}#${tag}` : name;
+
+      await api.setSetting('valorant_api_key', apiKey);
+      await api.setSetting('riot_id', riotId);
+
       showToast('Configurações do Valorant salvas', 'success');
     } catch(e) {
-      showToast('Erro ao salvar Valorant', 'error');
+      console.error('Save Valorant error:', e);
+      showToast('Erro ao salvar Valorant: ' + (e.message || e), 'error');
     }
   });
 
@@ -156,7 +167,7 @@ export async function renderSettings(container) {
               modal.close();
               loadCategories();
             } catch(e) {
-              showToast('Erro ao criar categoria', 'error');
+              showToast('Erro ao criar categoria: ' + (e.message || e), 'error');
             }
           }
         }}
@@ -166,44 +177,77 @@ export async function renderSettings(container) {
 
   document.getElementById('export-db-btn').addEventListener('click', async () => {
     try {
-      await api.exportDatabase();
+      const jsonStr = await api.exportDataJson();
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `clipmanager-backup-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
       showToast('Banco de dados exportado', 'success');
     } catch(e) {
-      showToast('Erro ao exportar', 'error');
+      console.error('Export error:', e);
+      showToast('Erro ao exportar: ' + (e.message || e), 'error');
     }
   });
 
   document.getElementById('import-db-btn').addEventListener('click', async () => {
     try {
-      await api.importDatabase();
-      showToast('Banco de dados importado', 'success');
-      loadSettingsData();
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'application/json';
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = async (evt) => {
+            try {
+              await api.importDataJson(evt.target.result);
+              showToast('Banco de dados importado com sucesso', 'success');
+              await loadSettingsData();
+            } catch (err) {
+              showToast('Erro ao importar: ' + (err.message || err), 'error');
+            }
+          };
+          reader.readAsText(file);
+        }
+      };
+      input.click();
     } catch(e) {
-      showToast('Erro ao importar', 'error');
+      console.error('Import error:', e);
+      showToast('Erro ao importar: ' + (e.message || e), 'error');
     }
   });
 }
 
 async function loadSettingsData() {
   try {
-    const twitch = await api.getSettings('twitch');
-    if (twitch) {
-      document.getElementById('twitch-client-id').value = twitch.clientId || '';
-      document.getElementById('twitch-client-secret').value = twitch.clientSecret || '';
-      document.getElementById('twitch-broadcaster').value = twitch.broadcaster || '';
+    const allSettings = await api.listSettings();
+    const settingsMap = {};
+    if (Array.isArray(allSettings)) {
+      allSettings.forEach(s => settingsMap[s.key] = s.value);
     }
 
-    const youtube = await api.getSettings('youtube');
-    if (youtube) {
-      document.getElementById('youtube-api-key').value = youtube.apiKey || '';
-      document.getElementById('youtube-channel-id').value = youtube.channelId || '';
-    }
+    // Twitch
+    document.getElementById('twitch-client-id').value = settingsMap['twitch_client_id'] || '';
+    document.getElementById('twitch-client-secret').value = settingsMap['twitch_client_secret'] || '';
+    document.getElementById('twitch-broadcaster').value = settingsMap['twitch_username'] || '';
 
-    const valorant = await api.getSettings('valorant');
-    if (valorant) {
-      document.getElementById('valorant-api-key').value = valorant.apiKey || '';
-      document.getElementById('valorant-name').value = valorant.name || '';
-      document.getElementById('valorant-tag').value = valorant.tag || '';
+    // YouTube
+    document.getElementById('youtube-api-key').value = settingsMap['youtube_api_key'] || '';
+    document.getElementById('youtube-channel-id').value = settingsMap['youtube_channel_id'] || '';
+
+    // Valorant
+    document.getElementById('valorant-api-key').value = settingsMap['valorant_api_key'] || '';
+    const riotId = settingsMap['riot_id'] || '';
+    if (riotId.includes('#')) {
+      const parts = riotId.split('#');
+      document.getElementById('valorant-name').value = parts[0] || '';
+      document.getElementById('valorant-tag').value = parts[1] || '';
+    } else {
+      document.getElementById('valorant-name').value = riotId;
+      document.getElementById('valorant-tag').value = '';
     }
 
     await loadCategories();
