@@ -147,10 +147,13 @@ function handleImportTwitch() {
           showToast('Iniciando importação...', 'info');
           modal.close();
           const result = await api.importTwitchClips(parseInt(limit));
-          showToast(`Importação concluída: ${result.count} novos clipes`, 'success');
+          const count = result ? (result.imported ?? result.count ?? 0) : 0;
+          showToast(`Importação concluída: ${count} novos clipes`, 'success');
           loadClips();
         } catch(e) {
-          showToast('Erro na importação: ' + e.message, 'error');
+          console.error('Import Twitch error:', e);
+          const errorMsg = typeof e === 'string' ? e : (e?.message || JSON.stringify(e));
+          showToast('Erro na importação: ' + errorMsg, 'error');
         }
       }}
     ]
