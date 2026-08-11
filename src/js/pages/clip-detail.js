@@ -30,6 +30,11 @@ export async function renderClipDetail(container, clipId) {
     ? analyticsHistory[analyticsHistory.length - 1]
     : null;
 
+  let matchData = null;
+  try {
+    matchData = await api.getClipMatchData(clipId);
+  } catch(_) {}
+
   const twitchViews = currentClip.views || 0;
   const youtubeViews = latestYt ? (latestYt.views || 0) : 0;
   const totalViews = twitchViews + youtubeViews;
@@ -166,14 +171,24 @@ export async function renderClipDetail(container, clipId) {
         </div>
 
         <div class="section-card">
-          <h3>Partida Valorant</h3>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-3);">
+            <h3 style="margin:0;">Partida Valorant</h3>
+            ${matchData?.result ? `<span class="valo-badge ${matchData.result.toLowerCase().includes('vitória') || matchData.result.toLowerCase().includes('win') ? 'win' : 'loss'}">${matchData.result}</span>` : ''}
+          </div>
           <div id="valorant-match-container">
-            ${currentClip.match_id ? 
-              `<div class="text-sm mb-3">Vinculado à partida: <br><code class="mt-1 block">${currentClip.match_id}</code></div>
-               <button id="btn-unlink-match" class="btn btn-secondary btn-sm w-100">Desvincular</button>` :
-              `<p class="text-sm text-muted mb-3">Nenhuma partida vinculada.</p>
-               <button id="btn-link-match" class="btn btn-secondary w-100">Vincular Partida Recente</button>`
-            }
+            ${matchData ? `
+              <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-3); margin-bottom: var(--space-3);">
+                <div style="font-weight:700; font-size:14px; color:var(--text-primary); margin-bottom:4px;">
+                  ${matchData.map} — <span style="color:var(--accent-secondary);">${matchData.agent}</span>
+                </div>
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:2px;">Placar: <strong style="color:var(--text-primary);">${matchData.score}</strong></div>
+                <div style="font-size:12px; color:var(--text-muted);">KDA: <strong style="color:var(--text-primary);">${matchData.kda}</strong></div>
+              </div>
+              <button id="btn-unlink-match" class="btn btn-secondary btn-sm w-100">Desvincular Partida</button>
+            ` : `
+              <p class="text-sm text-muted mb-3">Nenhuma partida vinculada.</p>
+              <button id="btn-link-match" class="btn btn-secondary w-100">Vincular Partida Recente</button>
+            `}
           </div>
         </div>
       </div>
@@ -317,52 +332,72 @@ function setupEventListeners(clipId) {
   if(linkBtn) {
     linkBtn.addEventListener('click', async () => {
       showModal({
-        title: 'Vincular Partida',
-        body: '<p>Buscando últimas partidas...</p>',
+        title: 'Vincular Partida do Valorant',
+        body: `
+          <p class="text-sm text-muted mb-3">Últimas 20 partidas competitivas encontradas para sua conta:</p>
+          <div id="val-matches-list" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">
+            <p class="text-muted text-sm">Buscando partidas no servidor da Riot...</p>
+          </div>
+        `,
         buttons: [{ text: 'Cancelar', class: 'btn btn-secondary', close: true }]
       });
-      
+
+      const listEl = document.getElementById('val-matches-list');
       try {
-        const matches = await api.fetchRecentMatches();
-        const modalBody = document.querySelector('.modal-body');
-        if(matches && matches.length > 0) {
-          modalBody.innerHTML = `
-            <div class="list-group">
-              ${matches.map(m => `
-                <button class="list-group-item match-select-btn text-left" data-id="${m.meta.id}" data-agent="${m.stats.character.name}" data-map="${m.meta.map.name}" data-score="${m.stats.kills}/${m.stats.deaths}" data-kda="${m.stats.kills}/${m.stats.deaths}/${m.stats.assists}" data-result="${m.teams.has_won ? 'Vitória' : 'Derrota'}">
-                  <strong>${m.meta.map.name}</strong> - ${m.stats.character.name} <br>
-                  <span class="text-sm text-muted">KDA: ${m.stats.kills}/${m.stats.deaths}/${m.stats.assists} | ${new Date(m.meta.started_at).toLocaleString('pt-BR')}</span>
-                </button>
-              `).join('')}
-            </div>
-          `;
-          document.querySelectorAll('.match-select-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-              const el = e.currentTarget;
+        const matches = await api.fetchRecentMatches(20, 0, 'competitive');
+        if (matches && matches.length > 0) {
+          listEl.innerHTML = matches.map(m => {
+            const isWin = m.result?.toLowerCase().includes('vitória') || m.result?.toLowerCase().includes('win');
+            const resColor = isWin ? '#34d399' : '#f87171';
+            const resBg = isWin ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)';
+            return `
+              <div class="match-select-btn"
+                style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 12px; cursor: pointer; transition: all 120ms ease; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;"
+                data-id="${m.match_id}" data-agent="${m.agent}" data-map="${m.map}" data-score="${m.score}" data-kda="${m.kda}" data-result="${m.result}">
+                <div style="min-width:0; flex:1;">
+                  <div style="font-weight:600; font-size:14px; color:var(--text-primary); margin-bottom:4px;">
+                    ${m.map} — <span style="color:var(--accent-secondary);">${m.agent}</span>
+                  </div>
+                  <div style="font-size:12px; color:var(--text-muted);">
+                    KDA: <strong style="color:var(--text-primary);">${m.kda}</strong> | Placar: <strong>${m.score}</strong> ${m.started_at ? `| <span style="color:var(--text-secondary);">${m.started_at}</span>` : ''}
+                  </div>
+                </div>
+                <span style="font-size:12px; font-weight:700; color:${resColor}; background:${resBg}; padding: 4px 12px; border-radius: 999px; border: 1px solid ${resColor}33; white-space:nowrap;">
+                  ${m.result}
+                </span>
+              </div>
+            `;
+          }).join('');
+
+          listEl.querySelectorAll('.match-select-btn').forEach(card => {
+            card.addEventListener('mouseover', () => { card.style.borderColor = 'var(--accent-primary)'; card.style.transform = 'translateY(-2px)'; });
+            card.addEventListener('mouseout', () => { card.style.borderColor = 'var(--border-subtle)'; card.style.transform = 'none'; });
+            card.addEventListener('click', async () => {
               try {
                 await api.linkMatchToClip({
                   clipId: clipId,
-                  matchId: el.getAttribute('data-id'),
-                  agent: el.getAttribute('data-agent'),
-                  map: el.getAttribute('data-map'),
-                  score: el.getAttribute('data-score'),
-                  kda: el.getAttribute('data-kda'),
-                  result: el.getAttribute('data-result')
+                  matchId: card.getAttribute('data-id'),
+                  agent: card.getAttribute('data-agent'),
+                  map: card.getAttribute('data-map'),
+                  score: card.getAttribute('data-score'),
+                  kda: card.getAttribute('data-kda'),
+                  result: card.getAttribute('data-result')
                 });
-                showToast('Partida vinculada', 'success');
-                document.querySelector('.modal-overlay').remove(); // close modal
+                showToast('Partida vinculada com sucesso', 'success');
+                document.querySelector('.modal-overlay')?.remove();
                 renderClipDetail(document.getElementById('app-container'), clipId);
               } catch(err) {
-                console.error('Link match error:', err);
-                showToast('Erro ao vincular', 'error');
+                const msg = typeof err === 'string' ? err : (err?.message || JSON.stringify(err));
+                showToast('Erro ao vincular: ' + msg, 'error');
               }
             });
           });
         } else {
-          modalBody.innerHTML = '<p>Nenhuma partida recente encontrada.</p>';
+          listEl.innerHTML = '<p class="text-muted text-sm">Nenhuma partida competitiva recente encontrada.</p>';
         }
       } catch(e) {
-        document.querySelector('.modal-body').innerHTML = '<p class="text-error">Erro ao buscar partidas. Verifique suas credenciais nas configurações.</p>';
+        const msg = typeof e === 'string' ? e : (e?.message || JSON.stringify(e));
+        if (listEl) listEl.innerHTML = `<p class="text-error text-sm">Erro ao buscar partidas: ${msg}</p>`;
       }
     });
   }

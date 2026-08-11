@@ -55,7 +55,12 @@ export const api = {
   getTopClips: (limit = 10) => invoke("get_top_clips", { limit: Number(limit) }),
 
   // Valorant Match Linker
-  fetchRecentMatches: () => invoke("fetch_recent_matches"),
+  fetchRecentMatches: (size = 10, start = 0, mode = null) => invoke("fetch_recent_matches", {
+    size: size ? Number(size) : null,
+    start: start ? Number(start) : 0,
+    mode: mode || null,
+  }),
+  fetchMatchById: (matchId) => invoke("fetch_match_by_id", { matchId }),
   linkMatchToClip: (params) => invoke("link_match_to_clip", {
     clipId: Number(params.clipId),
     matchId: params.matchId,

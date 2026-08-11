@@ -28,8 +28,10 @@ struct HenrikMatchData {
 #[derive(Debug, Deserialize)]
 struct HenrikMetadata {
     match_id: Option<String>,
+    matchid: Option<String>,
     map: Option<String>,
     game_start_patched: Option<String>,
+    game_start: Option<i64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -83,17 +85,32 @@ impl HenrikClient {
         region: &str,
         name: &str,
         tag: &str,
+        size: Option<i64>,
+        start: Option<i64>,
+        mode: Option<&str>,
     ) -> Result<Vec<ValorantMatchInfo>> {
-        let url = format!(
-            "https://api.henrikdev.xyz/valorant/v3/matches/{}/{}/{}",
-            region.trim(),
+        let size_val = size.unwrap_or(10);
+        let start_val = start.unwrap_or(0);
+        let reg = if region.trim().is_empty() { "br" } else { region.trim() };
+
+        let mut url = format!(
+            "https://api.henrikdev.xyz/valorant/v3/matches/{}/{}/{}?size={}&start={}",
+            reg,
             name.trim(),
-            tag.trim()
+            tag.trim(),
+            size_val,
+            start_val
         );
+        if let Some(m) = mode.filter(|m| !m.trim().is_empty()) {
+            url.push_str(&format!("&mode={}", m.trim()));
+        }
 
         let mut req = self.http.get(&url);
         if let Some(key) = self.api_key.as_ref().filter(|k| !k.trim().is_empty()) {
-            req = req.header("Authorization", key.trim());
+            let clean_key = key.trim();
+            req = req
+                .header("Authorization", clean_key)
+                .header("hdev-api-key", clean_key);
         }
 
         let res = req.send().await?;
@@ -113,12 +130,21 @@ impl HenrikClient {
                 None => continue,
             };
 
-            let match_id = meta.match_id.clone().unwrap_or_default();
+            let match_id = meta
+                .match_id
+                .clone()
+                .or_else(|| meta.matchid.clone())
+                .unwrap_or_default();
             let map = meta
                 .map
                 .clone()
                 .unwrap_or_else(|| "Desconhecido".to_string());
-            let started_at = meta.game_start_patched.clone().unwrap_or_default();
+            let started_at = match meta.game_start {
+                Some(ts) => chrono::DateTime::from_timestamp(ts, 0)
+                    .map(|dt| dt.format("%d/%m/%Y %H:%M").to_string())
+                    .unwrap_or_else(|| meta.game_start_patched.clone().unwrap_or_default()),
+                None => meta.game_start_patched.clone().unwrap_or_default(),
+            };
 
             let players = m.players.as_ref().and_then(|p| p.all_players.as_ref());
             let target_player = players.and_then(|plist| {
@@ -184,6 +210,131 @@ impl HenrikClient {
         }
 
         Ok(matches)
+    }
+
+    pub async fn get_match_by_id(
+        &self,
+        _region: &str,
+        match_id: &str,
+        name: &str,
+        tag: &str,
+    ) -> Result<ValorantMatchInfo> {
+        let url = format!(
+            "https://api.henrikdev.xyz/valorant/v2/match/{}",
+            match_id.trim()
+        );
+        let mut req = self.http.get(&url);
+        if let Some(key) = self.api_key.as_ref().filter(|k| !k.trim().is_empty()) {
+            let clean_key = key.trim();
+            req = req
+                .header("Authorization", clean_key)
+                .header("hdev-api-key", clean_key);
+        }
+
+        let res = req.send().await?;
+        if !res.status().is_success() {
+            let err_text = res.text().await.unwrap_or_default();
+            return Err(AppError::Api(format!("Henrik API error: {err_text}")));
+        }
+
+        let raw_json: serde_json::Value = res.json().await?;
+        let data = raw_json
+            .get("data")
+            .ok_or_else(|| AppError::NotFound("Partida não encontrada.".to_string()))?;
+
+        let map = data
+            .pointer("/metadata/map")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Desconhecido")
+            .to_string();
+
+        let game_start = data.pointer("/metadata/game_start").and_then(|v| v.as_i64());
+        let game_start_patched = data
+            .pointer("/metadata/game_start_patched")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+
+        let started_at = match game_start {
+            Some(ts) => chrono::DateTime::from_timestamp(ts, 0)
+                .map(|dt| dt.format("%d/%m/%Y %H:%M").to_string())
+                .unwrap_or(game_start_patched),
+            None => game_start_patched,
+        };
+
+        let players = data.pointer("/players/all_players").and_then(|v| v.as_array());
+        let target_player = players.and_then(|plist| {
+            plist
+                .iter()
+                .find(|p| {
+                    let p_name = p.get("name").and_then(|v| v.as_str()).unwrap_or("");
+                    let p_tag = p.get("tag").and_then(|v| v.as_str()).unwrap_or("");
+                    p_name.eq_ignore_ascii_case(name) && p_tag.eq_ignore_ascii_case(tag)
+                })
+                .or_else(|| plist.first())
+        });
+
+        let (agent, kda, team_name) = match target_player {
+            Some(p) => {
+                let char_name = p
+                    .get("character")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("Agente")
+                    .to_string();
+                let stats = p.get("stats");
+                let k = stats
+                    .and_then(|s| s.get("kills"))
+                    .and_then(|v| v.as_i64())
+                    .unwrap_or(0);
+                let d = stats
+                    .and_then(|s| s.get("deaths"))
+                    .and_then(|v| v.as_i64())
+                    .unwrap_or(0);
+                let a = stats
+                    .and_then(|s| s.get("assists"))
+                    .and_then(|v| v.as_i64())
+                    .unwrap_or(0);
+                let t_name = p.get("team").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                (char_name, format!("{k}/{d}/{a}"), t_name)
+            }
+            None => ("Agente".to_string(), "0/0/0".to_string(), "".to_string()),
+        };
+
+        let teams = data.get("teams");
+        let (result, score) = match teams {
+            Some(t) => {
+                let is_red = team_name.eq_ignore_ascii_case("Red");
+                let my_team = t.get(if is_red { "red" } else { "blue" });
+                let enemy_team = t.get(if is_red { "blue" } else { "red" });
+
+                let my_rounds = my_team
+                    .and_then(|tm| tm.get("rounds_won"))
+                    .and_then(|v| v.as_i64())
+                    .unwrap_or(0);
+                let enemy_rounds = enemy_team
+                    .and_then(|tm| tm.get("rounds_won"))
+                    .and_then(|v| v.as_i64())
+                    .unwrap_or(0);
+                let won = my_team
+                    .and_then(|tm| tm.get("has_won"))
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+
+                let res_str = if won { "Vitória" } else { "Derrota" };
+                (res_str.to_string(), format!("{my_rounds} - {enemy_rounds}"))
+            }
+            None => ("Partida".to_string(), "0 - 0".to_string()),
+        };
+
+        Ok(ValorantMatchInfo {
+            match_id: match_id.to_string(),
+            map,
+            agent,
+            kda,
+            result,
+            score,
+            started_at,
+        })
     }
 }
 

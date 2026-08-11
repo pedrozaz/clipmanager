@@ -55,6 +55,7 @@ pub fn run() {
             commands::analytics::get_clips_by_status_count,
             commands::analytics::get_top_clips,
             commands::valorant::fetch_recent_matches,
+            commands::valorant::fetch_match_by_id,
             commands::valorant::link_match_to_clip,
             commands::valorant::get_clip_match_data,
             commands::valorant::unlink_match_from_clip,
