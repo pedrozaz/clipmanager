@@ -12,9 +12,14 @@ export async function renderClipDetailPage(container, clipId) {
     const assignedCategories = await api.getClipCategories(clipId);
     const allCategories = await api.listCategories();
     let analyticsHistory = [];
+    let matchData = null;
 
     try {
       analyticsHistory = await api.getAnalyticsHistory(clipId);
+    } catch (_) {}
+
+    try {
+      matchData = await api.getClipMatchData(clipId);
     } catch (_) {}
 
     const latestAnalytics = analyticsHistory.length > 0 ? analyticsHistory[analyticsHistory.length - 1] : null;
@@ -128,10 +133,26 @@ export async function renderClipDetailPage(container, clipId) {
           </div>
 
           <div class="detail-card">
-            <h3>🎮 Partida de Valorant</h3>
-            <div class="placeholder-section">
-              <p>Vínculo com partida (KDA, mapa, agente) será integrado no <strong>Marco 9</strong> (Henrik API).</p>
+            <div class="card-header-flex">
+              <h3>🎮 Partida de Valorant</h3>
+              <button id="link-match-btn" class="btn btn-secondary">${matchData ? '🔄 Alterar' : '🔗 Vincular'}</button>
             </div>
+            ${matchData ? `
+              <div class="match-data-badge ${matchData.result === 'Vitória' ? 'match-win' : 'match-loss'}">
+                <div class="match-badge-header">
+                  <strong>🗺️ ${matchData.map}</strong> — <span class="badge-tag">${matchData.result} (${matchData.score})</span>
+                </div>
+                <div class="match-badge-details">
+                  <span>👤 Agente: <strong>${matchData.agent}</strong></span>
+                  <span>⚔️ KDA: <strong>${matchData.kda}</strong></span>
+                </div>
+                <button id="unlink-match-btn" class="btn-icon" style="margin-top: 8px; color: #ef4444; width: 100%;">❌ Desvincular partida</button>
+              </div>
+            ` : `
+              <div class="placeholder-section">
+                <p>Nenhuma partida vinculada. Clique em "Vincular" para buscar suas partidas recentes no Valorant.</p>
+              </div>
+            `}
           </div>
 
           <div class="detail-card">
@@ -181,6 +202,8 @@ function setupDetailEvents(clip, allCategories) {
   const instaInput = document.getElementById("insta-url-input");
   const addCategorySelect = document.getElementById("add-category-select");
   const fetchAnalyticsBtn = document.getElementById("fetch-analytics-btn");
+  const linkMatchBtn = document.getElementById("link-match-btn");
+  const unlinkMatchBtn = document.getElementById("unlink-match-btn");
   const deleteBtn = document.getElementById("delete-clip-btn");
 
   statusSelect?.addEventListener("change", async (e) => {
@@ -233,6 +256,76 @@ function setupDetailEvents(clip, allCategories) {
       renderClipDetailPage(document.getElementById("app-container"), clip.id);
     } catch (err) {
       showToast(`Erro ao sincronizar YouTube: ${err}`, "error");
+    }
+  });
+
+  linkMatchBtn?.addEventListener("click", async () => {
+    showToast("Buscando partidas recentes no Valorant...", "info");
+    try {
+      const matches = await api.fetchRecentMatches();
+      if (matches.length === 0) {
+        showToast("Nenhuma partida recente encontrada no Valorant.", "warning");
+        return;
+      }
+
+      openModal({
+        title: "🎮 Selecionar Partida do Valorant",
+        confirmText: "Vincular Partida",
+        contentHtml: `
+          <div class="form-group">
+            <label for="match-select">Partidas Recentes</label>
+            <select id="match-select" style="width: 100%; padding: 8px;">
+              ${matches.map(m => `
+                <option value="${m.match_id}" data-map="${m.map}" data-agent="${m.agent}" data-kda="${m.kda}" data-result="${m.result}" data-score="${m.score}">
+                  ${m.map} — ${m.agent} (${m.kda}) — ${m.result} (${m.score})
+                </option>
+              `).join("")}
+            </select>
+          </div>
+        `,
+        onConfirm: async () => {
+          const select = document.getElementById("match-select");
+          const selectedOpt = select.options[select.selectedIndex];
+          if (!selectedOpt) return false;
+
+          const matchId = select.value;
+          const map = selectedOpt.getAttribute("data-map");
+          const agent = selectedOpt.getAttribute("data-agent");
+          const kda = selectedOpt.getAttribute("data-kda");
+          const result = selectedOpt.getAttribute("data-result");
+          const score = selectedOpt.getAttribute("data-score");
+
+          try {
+            await api.linkMatchToClip({
+              clipId: clip.id,
+              matchId,
+              agent,
+              map,
+              score,
+              kda,
+              result,
+            });
+            showToast("Partida vinculada com sucesso ao clipe!", "success");
+            renderClipDetailPage(document.getElementById("app-container"), clip.id);
+            return true;
+          } catch (err) {
+            showToast(`Erro ao vincular partida: ${err}`, "error");
+            return false;
+          }
+        }
+      });
+    } catch (err) {
+      showToast(`Erro ao buscar partidas: ${err}`, "error");
+    }
+  });
+
+  unlinkMatchBtn?.addEventListener("click", async () => {
+    try {
+      await api.unlinkMatchFromClip(clip.id);
+      showToast("Partida desvinculada!", "info");
+      renderClipDetailPage(document.getElementById("app-container"), clip.id);
+    } catch (err) {
+      showToast(`Erro ao desvincular: ${err}`, "error");
     }
   });
 

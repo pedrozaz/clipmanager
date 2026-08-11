@@ -625,3 +625,34 @@
   height: 260px;
   width: 100%;
 }
+
+/* Valorant Match Data Badge */
+.match-data-badge {
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.match-win {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.match-loss {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.match-badge-header {
+  font-size: 0.95rem;
+}
+
+.match-badge-details {
+  display: flex;
+  gap: var(--space-md);
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}

@@ -72,7 +72,10 @@ export async function renderSettingsPage(container) {
             <option value="kr" ${settingsMap['valorant_region'] === 'kr' ? 'selected' : ''}>Coréia (kr)</option>
           </select>
         </div>
-        <button id="save-valorant-btn" class="btn btn-primary">Salvar Dados Valorant</button>
+        <div class="button-group" style="display: flex; gap: 8px;">
+          <button id="save-valorant-btn" class="btn btn-primary">Salvar Dados Valorant</button>
+          <button id="test-valorant-btn" class="btn btn-secondary">⚡ Testar Conexão</button>
+        </div>
       </div>
 
       <div class="settings-card settings-card-wide">
@@ -154,6 +157,16 @@ function setupSettingsEvents(container) {
       showToast("Configurações do Valorant salvas!", "success");
     } catch (err) {
       showToast(`Erro ao salvar: ${err}`, "error");
+    }
+  });
+
+  document.getElementById("test-valorant-btn")?.addEventListener("click", async () => {
+    showToast("Testando conexão com a Henrik API (Valorant)...", "info");
+    try {
+      const res = await api.testValorantConnection();
+      showToast(res, "success");
+    } catch (err) {
+      showToast(`Falha na conexão: ${err}`, "error");
     }
   });
 

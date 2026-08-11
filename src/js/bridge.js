@@ -40,4 +40,20 @@ export const api = {
   getDashboardStats: () => invoke("get_dashboard_stats"),
   getClipsByStatusCount: () => invoke("get_clips_by_status_count"),
   getTopClips: (limit = 10) => invoke("get_top_clips", { limit: Number(limit) }),
+
+  // Valorant Match Linker
+  fetchRecentMatches: () => invoke("fetch_recent_matches"),
+  linkMatchToClip: (params) => invoke("link_match_to_clip", {
+    clipId: Number(params.clipId),
+    matchId: params.matchId,
+    agent: params.agent,
+    map: params.map,
+    score: params.score,
+    kda: params.kda,
+    result: params.result,
+    rank: params.rank || null,
+  }),
+  getClipMatchData: (clipId) => invoke("get_clip_match_data", { clipId: Number(clipId) }),
+  unlinkMatchFromClip: (clipId) => invoke("unlink_match_from_clip", { clipId: Number(clipId) }),
+  testValorantConnection: () => invoke("test_valorant_connection"),
 };
