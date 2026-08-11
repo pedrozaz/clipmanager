@@ -10,7 +10,7 @@ let allCategories = [];
 export async function renderClipDetail(container, clipId) {
   try {
     currentClip = await api.getClip(clipId);
-    allCategories = await api.getCategories();
+    allCategories = await api.listCategories();
   } catch(e) {
     container.innerHTML = '<p class="text-error">Erro ao carregar clipe</p>';
     return;
@@ -21,7 +21,7 @@ export async function renderClipDetail(container, clipId) {
     return;
   }
 
-  const clipCategories = allCategories.filter(c => currentClip.category_ids && currentClip.category_ids.includes(c.id));
+  const clipCategories = (allCategories || []).filter(c => currentClip.category_ids && currentClip.category_ids.includes(c.id));
 
   container.innerHTML = `
     <div class="page-header d-flex justify-content-between">
@@ -148,7 +148,8 @@ function setupEventListeners(clipId) {
   // Auto-save logic
   const saveChanges = async () => {
     try {
-      await api.updateClip(clipId, {
+      await api.updateClip({
+        id: clipId,
         title: document.getElementById('clip-title').value,
         status: document.getElementById('clip-status').value,
         post_url: document.getElementById('clip-post-url').value,
@@ -156,7 +157,8 @@ function setupEventListeners(clipId) {
       });
       // Silent save
     } catch(e) {
-      showToast('Erro ao salvar', 'error');
+      console.error('Auto-save error:', e);
+      showToast('Erro ao salvar alterações', 'error');
     }
   };
 
@@ -185,17 +187,18 @@ function setupEventListeners(clipId) {
   document.getElementById('btn-sync-stats').addEventListener('click', async () => {
     try {
       showToast('Sincronizando estatísticas...', 'info');
-      await api.syncClipAnalytics(clipId);
+      await api.fetchYoutubeAnalytics(clipId);
       showToast('Estatísticas atualizadas', 'success');
       renderClipDetail(document.getElementById('app-container'), clipId);
     } catch(e) {
+      console.error('Sync stats error:', e);
       showToast('Erro ao sincronizar', 'error');
     }
   });
 
   // Categories
   document.getElementById('btn-manage-categories').addEventListener('click', () => {
-    const options = allCategories.map(c => {
+    const options = (allCategories || []).map(c => {
       const isChecked = currentClip.category_ids && currentClip.category_ids.includes(c.id);
       return `
         <label class="d-flex align-items-center gap-2 mb-2">
@@ -211,13 +214,26 @@ function setupEventListeners(clipId) {
       buttons: [
         { text: 'Cancelar', class: 'btn btn-secondary', close: true },
         { text: 'Salvar', class: 'btn btn-primary', onClick: async (modal) => {
-          const selected = Array.from(document.querySelectorAll('.cat-checkbox:checked')).map(cb => parseInt(cb.value));
+          const selectedIds = Array.from(document.querySelectorAll('.cat-checkbox:checked')).map(cb => parseInt(cb.value));
+          const currentIds = currentClip.category_ids || [];
           try {
-            await api.updateClipCategories(clipId, selected);
+            // Add missing
+            for (const id of selectedIds) {
+              if (!currentIds.includes(id)) {
+                await api.addCategoryToClip(clipId, id);
+              }
+            }
+            // Remove unselected
+            for (const id of currentIds) {
+              if (!selectedIds.includes(id)) {
+                await api.removeCategoryFromClip(clipId, id);
+              }
+            }
             showToast('Categorias atualizadas', 'success');
             modal.close();
             renderClipDetail(document.getElementById('app-container'), clipId);
           } catch(e) {
+            console.error('Update categories error:', e);
             showToast('Erro ao atualizar categorias', 'error');
           }
         }}
@@ -236,13 +252,13 @@ function setupEventListeners(clipId) {
       });
       
       try {
-        const matches = await api.getRecentValorantMatches();
+        const matches = await api.fetchRecentMatches();
         const modalBody = document.querySelector('.modal-body');
         if(matches && matches.length > 0) {
           modalBody.innerHTML = `
             <div class="list-group">
               ${matches.map(m => `
-                <button class="list-group-item match-select-btn text-left" data-id="${m.meta.id}">
+                <button class="list-group-item match-select-btn text-left" data-id="${m.meta.id}" data-agent="${m.stats.character.name}" data-map="${m.meta.map.name}" data-score="${m.stats.kills}/${m.stats.deaths}" data-kda="${m.stats.kills}/${m.stats.deaths}/${m.stats.assists}" data-result="${m.teams.has_won ? 'Vitória' : 'Derrota'}">
                   <strong>${m.meta.map.name}</strong> - ${m.stats.character.name} <br>
                   <span class="text-sm text-muted">KDA: ${m.stats.kills}/${m.stats.deaths}/${m.stats.assists} | ${new Date(m.meta.started_at).toLocaleString('pt-BR')}</span>
                 </button>
@@ -251,13 +267,22 @@ function setupEventListeners(clipId) {
           `;
           document.querySelectorAll('.match-select-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
-              const matchId = e.currentTarget.getAttribute('data-id');
+              const el = e.currentTarget;
               try {
-                await api.linkValorantMatch(clipId, matchId);
+                await api.linkMatchToClip({
+                  clipId: clipId,
+                  matchId: el.getAttribute('data-id'),
+                  agent: el.getAttribute('data-agent'),
+                  map: el.getAttribute('data-map'),
+                  score: el.getAttribute('data-score'),
+                  kda: el.getAttribute('data-kda'),
+                  result: el.getAttribute('data-result')
+                });
                 showToast('Partida vinculada', 'success');
                 document.querySelector('.modal-overlay').remove(); // close modal
                 renderClipDetail(document.getElementById('app-container'), clipId);
               } catch(err) {
+                console.error('Link match error:', err);
                 showToast('Erro ao vincular', 'error');
               }
             });
@@ -275,10 +300,11 @@ function setupEventListeners(clipId) {
   if(unlinkBtn) {
     unlinkBtn.addEventListener('click', async () => {
       try {
-        await api.unlinkValorantMatch(clipId);
+        await api.unlinkMatchFromClip(clipId);
         showToast('Partida desvinculada', 'success');
         renderClipDetail(document.getElementById('app-container'), clipId);
       } catch(e) {
+        console.error('Unlink match error:', e);
         showToast('Erro ao desvincular', 'error');
       }
     });

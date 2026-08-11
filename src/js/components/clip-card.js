@@ -7,24 +7,28 @@ export function renderClipCard(clip, categoriesMap) {
   
   return `
     <div class="clip-card clip-item-link" data-id="${clip.id}">
-      <div class="clip-thumb">
+      <div class="card-thumbnail">
         ${clip.thumbnail_url 
-          ? `<img src="${clip.thumbnail_url}" alt="Thumbnail">` 
+          ? `<img src="${clip.thumbnail_url}" alt="${clip.title}" loading="lazy">` 
           : `<div class="thumb-placeholder"><span>CM</span></div>`
         }
-        <div class="clip-status-overlay">
+        <div class="card-thumbnail-gradient"></div>
+        <div class="card-status">
           ${renderStatusBadge(clip.status)}
         </div>
       </div>
-      <div class="clip-content">
-        <h4 class="clip-title" title="${clip.title}">${clip.title}</h4>
-        <div class="clip-meta text-sm text-muted mb-2">
-          <span>${dateStr}</span> • <span>${clip.views || 0} views</span>
+      <div class="card-content">
+        <h4 class="card-title" title="${clip.title}">${clip.title}</h4>
+        <div class="card-meta">
+          <span>${dateStr}</span>
+          <span>${clip.views || 0} views</span>
         </div>
-        <div class="clip-tags d-flex flex-wrap gap-1">
-          ${clipCategories.slice(0, 3).map(c => renderCategoryTag(c)).join('')}
-          ${clipCategories.length > 3 ? '<span class="text-xs text-muted">...</span>' : ''}
-        </div>
+        ${clipCategories.length > 0 ? `
+          <div class="card-tags">
+            ${clipCategories.slice(0, 3).map(c => renderCategoryTag(c)).join('')}
+            ${clipCategories.length > 3 ? '<span class="text-xs text-muted">+more</span>' : ''}
+          </div>
+        ` : ''}
       </div>
     </div>
   `;
@@ -37,22 +41,23 @@ export function renderClipRow(clip, categoriesMap) {
   return `
     <tr class="clip-row clip-item-link cursor-pointer" data-id="${clip.id}">
       <td style="width: 100px;">
-        <div class="row-thumb" style="width: 80px; height: 45px; background: #1a1a20; border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+        <div class="row-thumb">
           ${clip.thumbnail_url 
-            ? `<img src="${clip.thumbnail_url}" style="width: 100%; height: 100%; object-fit: cover;">` 
-            : `<span class="text-xs text-muted">CM</span>`
+            ? `<img src="${clip.thumbnail_url}" alt="Thumb">` 
+            : `<span>CM</span>`
           }
         </div>
       </td>
       <td>
-        <div class="font-medium">${clip.title}</div>
-        <div class="d-flex flex-wrap gap-1 mt-1">
+        <div class="font-medium card-title-text">${clip.title}</div>
+        <div class="row-tags">
           ${clipCategories.map(c => renderCategoryTag(c)).join('')}
         </div>
       </td>
       <td>${renderStatusBadge(clip.status)}</td>
-      <td class="text-muted">${dateStr}</td>
-      <td class="text-muted">${clip.views || 0}</td>
+      <td class="text-muted text-sm">${dateStr}</td>
+      <td class="text-muted text-sm">${clip.views || 0}</td>
     </tr>
   `;
 }
+

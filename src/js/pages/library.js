@@ -41,9 +41,11 @@ export async function renderLibrary(container) {
 
 async function loadCategoriesMap() {
   try {
-    const cats = await api.getCategories();
+    const cats = await api.listCategories();
     categoriesMap = {};
-    cats.forEach(c => categoriesMap[c.id] = c);
+    if (Array.isArray(cats)) {
+      cats.forEach(c => categoriesMap[c.id] = c);
+    }
   } catch(e) {
     console.error('Failed to load categories map', e);
   }
@@ -51,9 +53,11 @@ async function loadCategoriesMap() {
 
 async function loadClips() {
   try {
-    clips = await api.getClips();
+    const res = await api.listClips();
+    clips = Array.isArray(res) ? res : [];
     applyFilters();
   } catch(e) {
+    console.error('Failed to load clips:', e);
     document.getElementById('clips-display-container').innerHTML = '<p class="text-error">Erro ao carregar clipes</p>';
   }
 }
@@ -97,10 +101,10 @@ function renderClipsDisplay(filteredClips) {
   }
 
   if (currentViewMode === 'grid') {
-    container.className = 'clips-grid mt-4';
+    container.className = 'clips-grid grid-view';
     container.innerHTML = filteredClips.map(clip => renderClipCard(clip, categoriesMap)).join('');
   } else {
-    container.className = 'clips-list mt-4';
+    container.className = 'clips-list table-container';
     container.innerHTML = `
       <table class="data-table">
         <thead>
