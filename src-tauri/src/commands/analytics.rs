@@ -3,7 +3,33 @@ use crate::api::youtube::YoutubeClient;
 use crate::db::models::Analytics;
 use crate::errors::{AppError, Result};
 use rusqlite::params;
+use serde::Serialize;
 use tauri::State;
+
+#[derive(Debug, Serialize)]
+pub struct DashboardStats {
+    pub total_clips: i64,
+    pub total_views: i64,
+    pub avg_likes: f64,
+    pub top_clip_title: Option<String>,
+    pub top_clip_views: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct StatusCount {
+    pub status: String,
+    pub count: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TopClipStat {
+    pub id: i64,
+    pub title: String,
+    pub views: i64,
+    pub likes: i64,
+    pub status: String,
+    pub youtube_url: Option<String>,
+}
 
 #[tauri::command]
 pub async fn fetch_youtube_analytics(state: State<'_, DbState>, clip_id: i64) -> Result<Analytics> {
@@ -143,11 +169,106 @@ pub async fn test_youtube_connection(state: State<'_, DbState>) -> Result<String
     };
 
     let client = YoutubeClient::new(api_key);
-    // Use Rick Astley video ID as reference test
     let stats = client.get_video_stats("dQw4w9WgXcQ").await?;
 
     Ok(format!(
         "Conexão bem-sucedida! Título retornado: '{}' (Views: {})",
         stats.title, stats.views
     ))
+}
+
+#[tauri::command]
+pub fn get_dashboard_stats(state: State<'_, DbState>) -> Result<DashboardStats> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| AppError::Database(e.to_string()))?;
+
+    let total_clips: i64 = conn
+        .query_row("SELECT COUNT(*) FROM clips", [], |r| r.get(0))
+        .unwrap_or(0);
+
+    let total_views: i64 = conn
+        .query_row(
+            "SELECT COALESCE(SUM(views), 0) FROM (SELECT views FROM analytics GROUP BY clip_id HAVING id = MAX(id))",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+
+    let avg_likes: f64 = conn
+        .query_row(
+            "SELECT COALESCE(AVG(likes), 0.0) FROM (SELECT likes FROM analytics GROUP BY clip_id HAVING id = MAX(id))",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or(0.0);
+
+    let (top_clip_title, top_clip_views) = conn
+        .query_row(
+            "SELECT c.title, MAX(a.views) FROM clips c JOIN analytics a ON c.id = a.clip_id GROUP BY c.id ORDER BY a.views DESC LIMIT 1",
+            [],
+            |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?)),
+        )
+        .ok()
+        .map(|(t, v)| (Some(t), v))
+        .unwrap_or((None, 0));
+
+    Ok(DashboardStats {
+        total_clips,
+        total_views,
+        avg_likes,
+        top_clip_title,
+        top_clip_views,
+    })
+}
+
+#[tauri::command]
+pub fn get_clips_by_status_count(state: State<'_, DbState>) -> Result<Vec<StatusCount>> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| AppError::Database(e.to_string()))?;
+
+    let mut stmt = conn.prepare("SELECT status, COUNT(*) FROM clips GROUP BY status")?;
+    let list = stmt
+        .query_map([], |row| {
+            Ok(StatusCount {
+                status: row.get(0)?,
+                count: row.get(1)?,
+            })
+        })?
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+
+    Ok(list)
+}
+
+#[tauri::command]
+pub fn get_top_clips(state: State<'_, DbState>, limit: Option<i64>) -> Result<Vec<TopClipStat>> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| AppError::Database(e.to_string()))?;
+    let l = limit.unwrap_or(10);
+
+    let mut stmt = conn.prepare(
+        "SELECT c.id, c.title, MAX(a.views) as views, MAX(a.likes) as likes, c.status, c.youtube_url
+         FROM clips c JOIN analytics a ON c.id = a.clip_id
+         GROUP BY c.id ORDER BY views DESC LIMIT ?1",
+    )?;
+
+    let list = stmt
+        .query_map(params![l], |row| {
+            Ok(TopClipStat {
+                id: row.get(0)?,
+                title: row.get(1)?,
+                views: row.get(2)?,
+                likes: row.get(3)?,
+                status: row.get(4)?,
+                youtube_url: row.get(5)?,
+            })
+        })?
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+
+    Ok(list)
 }

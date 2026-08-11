@@ -32,9 +32,12 @@ export const api = {
   importTwitchClips: (daysBack = 30) => invoke("import_twitch_clips", { daysBack: Number(daysBack) }),
   testTwitchConnection: () => invoke("test_twitch_connection"),
 
-  // Analytics
+  // Analytics & Dashboard
   fetchYoutubeAnalytics: (clipId) => invoke("fetch_youtube_analytics", { clipId: Number(clipId) }),
   fetchAllAnalytics: () => invoke("fetch_all_analytics"),
   getAnalyticsHistory: (clipId) => invoke("get_analytics_history", { clipId: Number(clipId) }),
   testYoutubeConnection: () => invoke("test_youtube_connection"),
+  getDashboardStats: () => invoke("get_dashboard_stats"),
+  getClipsByStatusCount: () => invoke("get_clips_by_status_count"),
+  getTopClips: (limit = 10) => invoke("get_top_clips", { limit: Number(limit) }),
 };

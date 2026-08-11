@@ -50,6 +50,9 @@ pub fn run() {
             commands::analytics::fetch_all_analytics,
             commands::analytics::get_analytics_history,
             commands::analytics::test_youtube_connection,
+            commands::analytics::get_dashboard_stats,
+            commands::analytics::get_clips_by_status_count,
+            commands::analytics::get_top_clips,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

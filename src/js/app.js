@@ -1,19 +1,12 @@
 import { renderLibraryPage } from "./pages/library.js";
 import { renderClipDetailPage } from "./pages/clip-detail.js";
 import { renderSettingsPage } from "./pages/settings.js";
+import { renderDashboardPage } from "./pages/dashboard.js";
 
 const routes = {
   "/library": renderLibraryPage,
   "/settings": renderSettingsPage,
-  "/dashboard": (container) => {
-    container.innerHTML = `
-      <div class="empty-state">
-        <span class="empty-icon">📊</span>
-        <h3>Dashboard de Analytics</h3>
-        <p>Em breve no Marco 8!</p>
-      </div>
-    `;
-  },
+  "/dashboard": renderDashboardPage,
 };
 
 function handleRoute() {
