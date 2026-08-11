@@ -1,31 +1,68 @@
+/* ==========================================================================
+   RESET CSS
+   Minimal modern reset for consistent cross-browser baseline
+   ========================================================================== */
+
 *, *::before, *::after {
   box-sizing: border-box;
+}
+
+* {
   margin: 0;
   padding: 0;
 }
 
 html, body {
   height: 100%;
-  font-family: var(--font-family);
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  overflow: hidden;
-  user-select: none;
-  -webkit-font-smoothing: antialiased;
 }
 
-button, input, select, textarea {
+body {
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-deepest);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+}
+
+img, picture, video, canvas, svg {
+  display: block;
+  max-width: 100%;
+}
+
+input, button, textarea, select {
   font: inherit;
   color: inherit;
+  outline: none;
 }
 
 button {
-  cursor: pointer;
-  border: none;
   background: none;
+  border: none;
+  cursor: pointer;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+/* Remove default focus outline and add a custom one */
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* Hide scrollbar for elements with generic .hide-scrollbar class */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

@@ -1,387 +1,286 @@
-import { api } from "../bridge.js";
-import { renderStatusBadge } from "../components/status-badge.js";
-import { renderCategoryTag } from "../components/category-tag.js";
-import { openModal } from "../components/modal.js";
-import { showToast } from "../components/toast.js";
+import * as api from '../bridge.js';
+import { renderStatusBadge } from '../components/status-badge.js';
+import { renderCategoryTag } from '../components/category-tag.js';
+import { showModal } from '../components/modal.js';
+import { showToast } from '../components/toast.js';
 
-let autoSaveTimer;
+let currentClip = null;
+let allCategories = [];
 
-export async function renderClipDetailPage(container, clipId) {
+export async function renderClipDetail(container, clipId) {
   try {
-    const clip = await api.getClip(clipId);
-    const assignedCategories = await api.getClipCategories(clipId);
-    const allCategories = await api.listCategories();
-    let analyticsHistory = [];
-    let matchData = null;
-
-    try {
-      analyticsHistory = await api.getAnalyticsHistory(clipId);
-    } catch (_) {}
-
-    try {
-      matchData = await api.getClipMatchData(clipId);
-    } catch (_) {}
-
-    const latestAnalytics = analyticsHistory.length > 0 ? analyticsHistory[analyticsHistory.length - 1] : null;
-
-    container.innerHTML = `
-      <div class="clip-detail-header">
-        <a href="#/library" class="btn btn-secondary btn-back">Voltar à Biblioteca</a>
-        <div class="header-actions">
-          <button id="delete-clip-btn" class="btn btn-danger">Excluir Clipe</button>
-        </div>
-      </div>
-
-      <div class="clip-detail-grid">
-        <div class="detail-main-column">
-          <div class="detail-card">
-            <div class="detail-title-row">
-              <input type="text" id="clip-title-edit" class="title-input" value="${clip.title}" placeholder="Título do Clipe" />
-            </div>
-            
-            <div class="detail-status-row">
-              <label for="status-select">Status do Clipe:</label>
-              <select id="status-select" class="status-select-dropdown">
-                <option value="novo" ${clip.status === "novo" ? "selected" : ""}>Novo</option>
-                <option value="editando" ${clip.status === "editando" ? "selected" : ""}>Editando</option>
-                <option value="editado" ${clip.status === "editado" ? "selected" : ""}>Editado</option>
-                <option value="postado" ${clip.status === "postado" ? "selected" : ""}>Postado</option>
-                <option value="descartado" ${clip.status === "descartado" ? "selected" : ""}>Descartado</option>
-              </select>
-            </div>
-
-            <div class="detail-section">
-              <h3>Links das Redes</h3>
-              <div class="links-grid">
-                <div class="link-item">
-                  <label>Twitch URL</label>
-                  <div class="link-input-group">
-                    <input type="text" id="twitch-url-input" value="${clip.twitch_url || ""}" placeholder="https://clips.twitch.tv/..." />
-                    <button class="btn-icon copy-btn" data-target="twitch-url-input">Copiar</button>
-                  </div>
-                </div>
-                <div class="link-item">
-                  <label>YouTube URL</label>
-                  <div class="link-input-group">
-                    <input type="text" id="youtube-url-input" value="${clip.youtube_url || ""}" placeholder="https://youtube.com/shorts/..." />
-                    <button class="btn-icon copy-btn" data-target="youtube-url-input">Copiar</button>
-                  </div>
-                </div>
-                <div class="link-item">
-                  <label>Instagram URL</label>
-                  <div class="link-input-group">
-                    <input type="text" id="insta-url-input" value="${clip.instagram_url || ""}" placeholder="https://instagram.com/reel/..." />
-                    <button class="btn-icon copy-btn" data-target="insta-url-input">Copiar</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="detail-section">
-              <h3>Anotações <span id="auto-save-indicator" class="save-indicator"></span></h3>
-              <textarea id="clip-notes-edit" rows="5" placeholder="Adicione notas, ideias de edição, hashtags...">${clip.notes || ""}</textarea>
-            </div>
-          </div>
-
-          <div class="detail-card">
-            <div class="card-header-flex">
-              <h3>Analytics (YouTube)</h3>
-              ${clip.youtube_url ? `<button id="fetch-analytics-btn" class="btn btn-secondary">Sincronizar YouTube</button>` : ''}
-            </div>
-            ${latestAnalytics ? `
-              <div class="analytics-metrics-grid">
-                <div class="metric-card">
-                  <span class="metric-value">${latestAnalytics.views.toLocaleString()}</span>
-                  <span class="metric-label">Visualizações</span>
-                </div>
-                <div class="metric-card">
-                  <span class="metric-value">${latestAnalytics.likes.toLocaleString()}</span>
-                  <span class="metric-label">Likes</span>
-                </div>
-                <div class="metric-card">
-                  <span class="metric-value">${latestAnalytics.comments.toLocaleString()}</span>
-                  <span class="metric-label">Comentários</span>
-                </div>
-              </div>
-              <p class="muted-text" style="font-size: 0.75rem; margin-top: 8px;">
-                Última consulta: ${latestAnalytics.fetched_at}
-              </p>
-            ` : `
-              <div class="placeholder-section">
-                <p>${clip.youtube_url ? 'Nenhuma métrica coletada ainda. Clique em "Sincronizar YouTube".' : 'Cole a URL do vídeo/Shorts do YouTube acima para coletar métricas de engajamento.'}</p>
-              </div>
-            `}
-          </div>
-        </div>
-
-        <div class="detail-sidebar-column">
-          <div class="detail-card">
-            <h3>Categorias</h3>
-            <div id="assigned-categories-container" class="assigned-categories-list">
-              ${renderAssignedCategories(assignedCategories)}
-            </div>
-            
-            <div class="add-category-row">
-              <select id="add-category-select">
-                <option value="">+ Adicionar categoria...</option>
-                ${allCategories
-                  .filter(c => !assignedCategories.some(ac => ac.id === c.id))
-                  .map(c => `<option value="${c.id}">${c.name}</option>`)
-                  .join("")}
-              </select>
-            </div>
-          </div>
-
-          <div class="detail-card">
-            <div class="card-header-flex">
-              <h3>Partida de Valorant</h3>
-              <button id="link-match-btn" class="btn btn-secondary">${matchData ? 'Alterar' : 'Vincular'}</button>
-            </div>
-            ${matchData ? `
-              <div class="match-data-badge ${matchData.result === 'Vitória' ? 'match-win' : 'match-loss'}">
-                <div class="match-badge-header">
-                  <strong>${matchData.map}</strong> — <span class="badge-tag">${matchData.result} (${matchData.score})</span>
-                </div>
-                <div class="match-badge-details">
-                  <span>Agente: <strong>${matchData.agent}</strong></span>
-                  <span>KDA: <strong>${matchData.kda}</strong></span>
-                </div>
-                <button id="unlink-match-btn" class="btn-icon" style="margin-top: 8px; color: #ef4444; width: 100%;">Desvincular partida</button>
-              </div>
-            ` : `
-              <div class="placeholder-section">
-                <p>Nenhuma partida vinculada. Clique em "Vincular" para buscar suas partidas recentes no Valorant.</p>
-              </div>
-            `}
-          </div>
-
-          <div class="detail-card">
-            <h3>Informações</h3>
-            <ul class="info-list">
-              <li><strong>Data do Clipe:</strong> ${clip.clip_date || "Não informada"}</li>
-              <li><strong>Criado em:</strong> ${clip.created_at ? clip.created_at.split(" ")[0] : "Hoje"}</li>
-              <li><strong>ID Interno:</strong> ${clip.id}</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    `;
-
-    setupDetailEvents(clip, allCategories);
-  } catch (err) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <h3>Clipe não encontrado</h3>
-        <p>${err}</p>
-        <a href="#/library" class="btn btn-secondary">Voltar à Biblioteca</a>
-      </div>
-    `;
+    currentClip = await api.getClip(clipId);
+    allCategories = await api.getCategories();
+  } catch(e) {
+    container.innerHTML = '<p class="text-error">Erro ao carregar clipe</p>';
+    return;
   }
-}
 
-function renderAssignedCategories(categories) {
-  if (categories.length === 0) {
-    return `<p class="muted-text">Nenhuma categoria atribuída.</p>`;
+  if(!currentClip) {
+    container.innerHTML = '<p class="text-error">Clipe não encontrado</p>';
+    return;
   }
-  return categories
-    .map(c => `
-      <div class="category-chip" style="--chip-color: ${c.color || "#8b5cf6"}">
-        <span>${c.name}</span>
-        <button class="remove-cat-btn" data-cat-id="${c.id}">&times;</button>
+
+  const clipCategories = allCategories.filter(c => currentClip.category_ids && currentClip.category_ids.includes(c.id));
+
+  container.innerHTML = `
+    <div class="page-header d-flex justify-content-between">
+      <div class="d-flex align-items-center gap-3">
+        <button id="btn-back" class="btn btn-secondary">Voltar</button>
+        <div>
+          <h2>Detalhes do Clipe</h2>
+        </div>
       </div>
-    `)
-    .join("");
-}
+      <div>
+        <button id="btn-delete" class="btn btn-danger">Excluir Clipe</button>
+      </div>
+    </div>
 
-function setupDetailEvents(clip, allCategories) {
-  const statusSelect = document.getElementById("status-select");
-  const titleInput = document.getElementById("clip-title-edit");
-  const notesTextarea = document.getElementById("clip-notes-edit");
-  const twitchInput = document.getElementById("twitch-url-input");
-  const youtubeInput = document.getElementById("youtube-url-input");
-  const instaInput = document.getElementById("insta-url-input");
-  const addCategorySelect = document.getElementById("add-category-select");
-  const fetchAnalyticsBtn = document.getElementById("fetch-analytics-btn");
-  const linkMatchBtn = document.getElementById("link-match-btn");
-  const unlinkMatchBtn = document.getElementById("unlink-match-btn");
-  const deleteBtn = document.getElementById("delete-clip-btn");
-
-  statusSelect?.addEventListener("change", async (e) => {
-    try {
-      await api.updateClipStatus(clip.id, e.target.value);
-      showToast("Status atualizado!", "success");
-    } catch (err) {
-      showToast(`Erro ao atualizar status: ${err}`, "error");
-    }
-  });
-
-  const triggerAutoSave = () => {
-    const indicator = document.getElementById("auto-save-indicator");
-    if (indicator) indicator.innerText = "Salvando...";
-
-    clearTimeout(autoSaveTimer);
-    autoSaveTimer = setTimeout(async () => {
-      try {
-        await api.updateClip({
-          id: Number(clip.id),
-          title: titleInput.value.trim() || clip.title,
-          twitchUrl: twitchInput.value.trim() || null,
-          youtubeUrl: youtubeInput.value.trim() || null,
-          instagramUrl: instaInput.value.trim() || null,
-          thumbnailUrl: clip.thumbnail_url,
-          duration: clip.duration,
-          clipDate: clip.clip_date,
-          status: statusSelect.value,
-          notes: notesTextarea.value.trim() || null,
-        });
-        if (indicator) indicator.innerText = "Salvo";
-        setTimeout(() => { if (indicator) indicator.innerText = ""; }, 2000);
-      } catch (err) {
-        if (indicator) indicator.innerText = "Erro ao salvar";
-      }
-    }, 600);
-  };
-
-  titleInput?.addEventListener("input", triggerAutoSave);
-  notesTextarea?.addEventListener("input", triggerAutoSave);
-  twitchInput?.addEventListener("input", triggerAutoSave);
-  youtubeInput?.addEventListener("input", triggerAutoSave);
-  instaInput?.addEventListener("input", triggerAutoSave);
-
-  fetchAnalyticsBtn?.addEventListener("click", async () => {
-    showToast("Buscando métricas na API do YouTube...", "info");
-    try {
-      await api.fetchYoutubeAnalytics(clip.id);
-      showToast("Métricas do YouTube atualizadas!", "success");
-      renderClipDetailPage(document.getElementById("app-container"), clip.id);
-    } catch (err) {
-      showToast(`Erro ao sincronizar YouTube: ${err}`, "error");
-    }
-  });
-
-  linkMatchBtn?.addEventListener("click", async () => {
-    showToast("Buscando partidas recentes no Valorant...", "info");
-    try {
-      const matches = await api.fetchRecentMatches();
-      if (matches.length === 0) {
-        showToast("Nenhuma partida recente encontrada no Valorant.", "warning");
-        return;
-      }
-
-      openModal({
-        title: "Selecionar Partida do Valorant",
-        confirmText: "Vincular Partida",
-        contentHtml: `
+    <div class="clip-detail-grid">
+      <div class="main-column">
+        <div class="section-card mb-4">
           <div class="form-group">
-            <label for="match-select">Partidas Recentes</label>
-            <select id="match-select" style="width: 100%; padding: 8px;">
-              ${matches.map(m => `
-                <option value="${m.match_id}" data-map="${m.map}" data-agent="${m.agent}" data-kda="${m.kda}" data-result="${m.result}" data-score="${m.score}">
-                  ${m.map} — ${m.agent} (${m.kda}) — ${m.result} (${m.score})
-                </option>
-              `).join("")}
+            <label>Título do Clipe</label>
+            <input type="text" id="clip-title" class="form-input text-lg" value="${currentClip.title}">
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="clip-status" class="form-select">
+              <option value="Novo" ${currentClip.status === 'Novo' ? 'selected' : ''}>Novo</option>
+              <option value="Editando" ${currentClip.status === 'Editando' ? 'selected' : ''}>Editando</option>
+              <option value="Editado" ${currentClip.status === 'Editado' ? 'selected' : ''}>Editado</option>
+              <option value="Postado" ${currentClip.status === 'Postado' ? 'selected' : ''}>Postado</option>
+              <option value="Descartado" ${currentClip.status === 'Descartado' ? 'selected' : ''}>Descartado</option>
             </select>
           </div>
-        `,
-        onConfirm: async () => {
-          const select = document.getElementById("match-select");
-          const selectedOpt = select.options[select.selectedIndex];
-          if (!selectedOpt) return false;
+          
+          <div class="form-group">
+            <label>URL Original (Twitch)</label>
+            <div class="d-flex gap-2">
+              <input type="text" class="form-input" value="${currentClip.original_url || ''}" readonly>
+              <a href="${currentClip.original_url}" target="_blank" class="btn btn-secondary">Abrir</a>
+              <button class="btn btn-secondary copy-btn" data-val="${currentClip.original_url}">Copiar</button>
+            </div>
+          </div>
 
-          const matchId = select.value;
-          const map = selectedOpt.getAttribute("data-map");
-          const agent = selectedOpt.getAttribute("data-agent");
-          const kda = selectedOpt.getAttribute("data-kda");
-          const result = selectedOpt.getAttribute("data-result");
-          const score = selectedOpt.getAttribute("data-score");
+          <div class="form-group">
+            <label>Link Shorts/TikTok (Postado)</label>
+            <div class="d-flex gap-2">
+              <input type="text" id="clip-post-url" class="form-input" value="${currentClip.post_url || ''}">
+              ${currentClip.post_url ? `<a href="${currentClip.post_url}" target="_blank" class="btn btn-secondary">Abrir</a>` : ''}
+            </div>
+          </div>
 
-          try {
-            await api.linkMatchToClip({
-              clipId: clip.id,
-              matchId,
-              agent,
-              map,
-              score,
-              kda,
-              result,
-            });
-            showToast("Partida vinculada com sucesso ao clipe!", "success");
-            renderClipDetailPage(document.getElementById("app-container"), clip.id);
-            return true;
-          } catch (err) {
-            showToast(`Erro ao vincular partida: ${err}`, "error");
-            return false;
-          }
-        }
-      });
-    } catch (err) {
-      showToast(`Erro ao buscar partidas: ${err}`, "error");
-    }
+          <div class="form-group">
+            <label>Anotações</label>
+            <textarea id="clip-notes" class="form-input" rows="5">${currentClip.notes || ''}</textarea>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <h3>Métricas</h3>
+          <p class="section-desc">Estatísticas sincronizadas das plataformas</p>
+          <div class="metrics-row mb-3">
+            <div class="metric-card"><div class="metric-label">Visualizações</div><div class="metric-value">${currentClip.views || 0}</div></div>
+            <div class="metric-card"><div class="metric-label">Curtidas</div><div class="metric-value">${currentClip.likes || 0}</div></div>
+            <div class="metric-card"><div class="metric-label">Comentários</div><div class="metric-value">${currentClip.comments || 0}</div></div>
+          </div>
+          <button id="btn-sync-stats" class="btn btn-secondary">Sincronizar Estatísticas</button>
+        </div>
+      </div>
+
+      <div class="sidebar-column">
+        <div class="section-card mb-4">
+          <h3>Informações</h3>
+          <div class="info-list text-sm">
+            <div class="mb-2"><strong>ID:</strong> ${currentClip.id}</div>
+            <div class="mb-2"><strong>Plataforma Base:</strong> ${currentClip.platform || 'Manual'}</div>
+            <div class="mb-2"><strong>Criado em:</strong> ${new Date(currentClip.created_at).toLocaleString('pt-BR')}</div>
+            <div class="mb-2"><strong>Game:</strong> ${currentClip.game_id || '-'}</div>
+          </div>
+        </div>
+
+        <div class="section-card mb-4">
+          <h3>Categorias</h3>
+          <div id="clip-categories-container" class="mb-3 d-flex flex-wrap gap-2">
+            ${clipCategories.length ? clipCategories.map(c => renderCategoryTag(c)).join('') : '<span class="text-muted text-sm">Nenhuma categoria</span>'}
+          </div>
+          <button id="btn-manage-categories" class="btn btn-secondary w-100">Gerenciar Categorias</button>
+        </div>
+
+        <div class="section-card">
+          <h3>Partida Valorant</h3>
+          <div id="valorant-match-container">
+            ${currentClip.match_id ? 
+              `<div class="text-sm mb-3">Vinculado à partida: <br><code class="mt-1 block">${currentClip.match_id}</code></div>
+               <button id="btn-unlink-match" class="btn btn-secondary btn-sm w-100">Desvincular</button>` :
+              `<p class="text-sm text-muted mb-3">Nenhuma partida vinculada.</p>
+               <button id="btn-link-match" class="btn btn-secondary w-100">Vincular Partida Recente</button>`
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  setupEventListeners(clipId);
+}
+
+function setupEventListeners(clipId) {
+  // Back
+  document.getElementById('btn-back').addEventListener('click', () => {
+    window.location.hash = '#/library';
   });
 
-  unlinkMatchBtn?.addEventListener("click", async () => {
-    try {
-      await api.unlinkMatchFromClip(clip.id);
-      showToast("Partida desvinculada!", "info");
-      renderClipDetailPage(document.getElementById("app-container"), clip.id);
-    } catch (err) {
-      showToast(`Erro ao desvincular: ${err}`, "error");
-    }
-  });
-
-  document.querySelectorAll(".copy-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const targetId = btn.getAttribute("data-target");
-      const input = document.getElementById(targetId);
-      if (input && input.value) {
-        navigator.clipboard.writeText(input.value);
-        showToast("Link copiado para a área de transferência!", "info");
-      }
-    });
-  });
-
-  addCategorySelect?.addEventListener("change", async (e) => {
-    const categoryId = e.target.value;
-    if (!categoryId) return;
-
-    try {
-      await api.addCategoryToClip(clip.id, categoryId);
-      showToast("Categoria adicionada!", "success");
-      renderClipDetailPage(document.getElementById("app-container"), clip.id);
-    } catch (err) {
-      showToast(`Erro ao adicionar categoria: ${err}`, "error");
-    }
-  });
-
-  document.querySelectorAll(".remove-cat-btn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const catId = btn.getAttribute("data-cat-id");
+  // Delete
+  document.getElementById('btn-delete').addEventListener('click', async () => {
+    if(confirm('Tem certeza que deseja excluir este clipe permanentemente?')) {
       try {
-        await api.removeCategoryFromClip(clip.id, catId);
-        showToast("Categoria removida!", "info");
-        renderClipDetailPage(document.getElementById("app-container"), clip.id);
-      } catch (err) {
-        showToast(`Erro ao remover categoria: ${err}`, "error");
+        await api.deleteClip(clipId);
+        showToast('Clipe excluído', 'success');
+        window.location.hash = '#/library';
+      } catch(e) {
+        showToast('Erro ao excluir', 'error');
+      }
+    }
+  });
+
+  // Auto-save logic
+  const saveChanges = async () => {
+    try {
+      await api.updateClip(clipId, {
+        title: document.getElementById('clip-title').value,
+        status: document.getElementById('clip-status').value,
+        post_url: document.getElementById('clip-post-url').value,
+        notes: document.getElementById('clip-notes').value
+      });
+      // Silent save
+    } catch(e) {
+      showToast('Erro ao salvar', 'error');
+    }
+  };
+
+  ['clip-title', 'clip-status', 'clip-post-url'].forEach(id => {
+    document.getElementById(id).addEventListener('change', saveChanges);
+  });
+  
+  let typingTimer;
+  document.getElementById('clip-notes').addEventListener('keyup', () => {
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(saveChanges, 1000);
+  });
+
+  // Copy buttons
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const val = e.target.getAttribute('data-val');
+      if(val) {
+        navigator.clipboard.writeText(val);
+        showToast('Copiado para área de transferência', 'info');
       }
     });
   });
 
-  deleteBtn?.addEventListener("click", () => {
-    openModal({
-      title: "Excluir Clipe",
-      confirmText: "Sim, Excluir",
-      contentHtml: `<p>Tem certeza que deseja excluir o clipe <strong>"${clip.title}"</strong>? Esta ação não pode ser desfeita.</p>`,
-      onConfirm: async () => {
-        try {
-          await api.deleteClip(clip.id);
-          showToast("Clipe excluído com sucesso!", "success");
-          window.location.hash = "#/library";
-          return true;
-        } catch (err) {
-          showToast(`Erro ao excluir clipe: ${err}`, "error");
-          return false;
-        }
-      }
+  // Sync Stats
+  document.getElementById('btn-sync-stats').addEventListener('click', async () => {
+    try {
+      showToast('Sincronizando estatísticas...', 'info');
+      await api.syncClipAnalytics(clipId);
+      showToast('Estatísticas atualizadas', 'success');
+      renderClipDetail(document.getElementById('app-container'), clipId);
+    } catch(e) {
+      showToast('Erro ao sincronizar', 'error');
+    }
+  });
+
+  // Categories
+  document.getElementById('btn-manage-categories').addEventListener('click', () => {
+    const options = allCategories.map(c => {
+      const isChecked = currentClip.category_ids && currentClip.category_ids.includes(c.id);
+      return `
+        <label class="d-flex align-items-center gap-2 mb-2">
+          <input type="checkbox" class="cat-checkbox" value="${c.id}" ${isChecked ? 'checked' : ''}>
+          <span style="color: ${c.color}">${c.name}</span>
+        </label>
+      `;
+    }).join('');
+
+    showModal({
+      title: 'Categorias do Clipe',
+      body: `<div class="form-group">${options || 'Nenhuma categoria cadastrada nas configurações.'}</div>`,
+      buttons: [
+        { text: 'Cancelar', class: 'btn btn-secondary', close: true },
+        { text: 'Salvar', class: 'btn btn-primary', onClick: async (modal) => {
+          const selected = Array.from(document.querySelectorAll('.cat-checkbox:checked')).map(cb => parseInt(cb.value));
+          try {
+            await api.updateClipCategories(clipId, selected);
+            showToast('Categorias atualizadas', 'success');
+            modal.close();
+            renderClipDetail(document.getElementById('app-container'), clipId);
+          } catch(e) {
+            showToast('Erro ao atualizar categorias', 'error');
+          }
+        }}
+      ]
     });
   });
+
+  // Valorant Match
+  const linkBtn = document.getElementById('btn-link-match');
+  if(linkBtn) {
+    linkBtn.addEventListener('click', async () => {
+      showModal({
+        title: 'Vincular Partida',
+        body: '<p>Buscando últimas partidas...</p>',
+        buttons: [{ text: 'Cancelar', class: 'btn btn-secondary', close: true }]
+      });
+      
+      try {
+        const matches = await api.getRecentValorantMatches();
+        const modalBody = document.querySelector('.modal-body');
+        if(matches && matches.length > 0) {
+          modalBody.innerHTML = `
+            <div class="list-group">
+              ${matches.map(m => `
+                <button class="list-group-item match-select-btn text-left" data-id="${m.meta.id}">
+                  <strong>${m.meta.map.name}</strong> - ${m.stats.character.name} <br>
+                  <span class="text-sm text-muted">KDA: ${m.stats.kills}/${m.stats.deaths}/${m.stats.assists} | ${new Date(m.meta.started_at).toLocaleString('pt-BR')}</span>
+                </button>
+              `).join('')}
+            </div>
+          `;
+          document.querySelectorAll('.match-select-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              const matchId = e.currentTarget.getAttribute('data-id');
+              try {
+                await api.linkValorantMatch(clipId, matchId);
+                showToast('Partida vinculada', 'success');
+                document.querySelector('.modal-overlay').remove(); // close modal
+                renderClipDetail(document.getElementById('app-container'), clipId);
+              } catch(err) {
+                showToast('Erro ao vincular', 'error');
+              }
+            });
+          });
+        } else {
+          modalBody.innerHTML = '<p>Nenhuma partida recente encontrada.</p>';
+        }
+      } catch(e) {
+        document.querySelector('.modal-body').innerHTML = '<p class="text-error">Erro ao buscar partidas. Verifique suas credenciais nas configurações.</p>';
+      }
+    });
+  }
+
+  const unlinkBtn = document.getElementById('btn-unlink-match');
+  if(unlinkBtn) {
+    unlinkBtn.addEventListener('click', async () => {
+      try {
+        await api.unlinkValorantMatch(clipId);
+        showToast('Partida desvinculada', 'success');
+        renderClipDetail(document.getElementById('app-container'), clipId);
+      } catch(e) {
+        showToast('Erro ao desvincular', 'error');
+      }
+    });
+  }
 }

@@ -1,76 +1,71 @@
-import { api } from "../bridge.js";
-import { createBarChart, createDoughnutChart } from "../components/chart.js";
-import { showToast } from "../components/toast.js";
+import * as api from '../bridge.js';
+import { createBarChart, createDoughnutChart } from '../components/chart.js';
+import { showToast } from '../components/toast.js';
 
-export async function renderDashboardPage(container) {
+let viewCountChart = null;
+let statusChart = null;
+
+export async function renderDashboard(container) {
   container.innerHTML = `
-    <div class="dashboard-header">
-      <div class="header-text">
-        <h2>Dashboard de Analytics</h2>
-        <p class="muted-text">Visão geral do desempenho dos seus clipes e redes sociais.</p>
+    <div class="page-header">
+      <div>
+        <h2>Dashboard</h2>
+        <p class="page-subtitle">Visão geral do desempenho dos seus clipes</p>
       </div>
-      <button id="sync-all-btn" class="btn btn-primary">Atualizar Analytics</button>
+      <button id="sync-analytics-btn" class="btn btn-primary">Sincronizar Métricas</button>
     </div>
 
-    <div id="dashboard-metrics-row" class="dashboard-metrics-grid">
-      <div class="dash-metric-card">
-        <div class="dash-metric-content">
-          <span id="stat-total-clips" class="dash-value">--</span>
-          <span class="dash-label">Total de Clipes</span>
-        </div>
+    <div class="panel-container mb-6">
+      <div class="panel-header">
+        <h3>Resumo do Canal</h3>
       </div>
-      <div class="dash-metric-card">
-        <div class="dash-metric-content">
-          <span id="stat-total-views" class="dash-value">--</span>
-          <span class="dash-label">Visualizações Totais</span>
-        </div>
-      </div>
-      <div class="dash-metric-card">
-        <div class="dash-metric-content">
-          <span id="stat-avg-likes" class="dash-value">--</span>
-          <span class="dash-label">Média de Likes</span>
-        </div>
-      </div>
-      <div class="dash-metric-card">
-        <div class="dash-metric-content">
-          <span id="stat-top-clip" class="dash-value" style="font-size: 1rem;">--</span>
-          <span class="dash-label">Clipe Mais Visto</span>
+      <div class="panel-body">
+        <div class="stream-summary-stats" id="dashboard-metrics">
+          <div class="stat-item"><div class="stat-label">Total de Clipes</div><div class="stat-value">0</div></div>
+          <div class="stat-item"><div class="stat-label">Visualizações totais</div><div class="stat-value">0</div></div>
+          <div class="stat-item"><div class="stat-label">Curtidas totais</div><div class="stat-value">0</div></div>
+          <div class="stat-item"><div class="stat-label">Clipes Postados</div><div class="stat-value">0</div></div>
         </div>
       </div>
     </div>
 
-    <div class="dashboard-charts-grid">
-      <div class="dash-chart-card">
-        <h3>Top Clipes por Visualizações</h3>
-        <div class="chart-wrapper">
-          <canvas id="top-clips-chart"></canvas>
-        </div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>Visualizações por Dia</h3>
+        <canvas id="view-count-chart"></canvas>
       </div>
-
-      <div class="dash-chart-card">
-        <h3>Distribuição por Status</h3>
-        <div class="chart-wrapper">
-          <canvas id="status-chart"></canvas>
-        </div>
+      <div class="chart-card">
+        <h3>Status dos Clipes</h3>
+        <canvas id="status-chart"></canvas>
       </div>
     </div>
 
-    <div class="dash-table-card">
-      <h3>Ranking dos 5 Clipes Mais Vistos</h3>
-      <div id="top-clips-table-container">
-        <p class="muted-text">Carregando dados...</p>
-      </div>
+    <div class="table-card">
+      <h3>Top Clipes (Mais Visualizados)</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th>Status</th>
+            <th>Plataforma</th>
+            <th>Visualizações</th>
+          </tr>
+        </thead>
+        <tbody id="top-clips-table">
+          <tr><td colspan="4" class="text-center">Carregando...</td></tr>
+        </tbody>
+      </table>
     </div>
   `;
 
-  document.getElementById("sync-all-btn")?.addEventListener("click", async () => {
-    showToast("Sincronizando analytics de todos os clipes...", "info");
+  document.getElementById('sync-analytics-btn').addEventListener('click', async () => {
     try {
-      const res = await api.fetchAllAnalytics();
-      showToast(`Sincronização concluída! ${res.length} clipes atualizados.`, "success");
+      showToast('Sincronizando métricas...', 'info');
+      await api.fetchAllAnalytics();
+      showToast('Métricas sincronizadas com sucesso', 'success');
       await loadDashboardData();
     } catch (err) {
-      showToast(`Erro ao sincronizar: ${err}`, "error");
+      showToast('Erro ao sincronizar métricas: ' + err.message, 'error');
     }
   });
 
@@ -80,63 +75,43 @@ export async function renderDashboardPage(container) {
 async function loadDashboardData() {
   try {
     const stats = await api.getDashboardStats();
-    document.getElementById("stat-total-clips").innerText = stats.total_clips;
-    document.getElementById("stat-total-views").innerText = stats.total_views.toLocaleString();
-    document.getElementById("stat-avg-likes").innerText = Math.round(stats.avg_likes).toLocaleString();
-    document.getElementById("stat-top-clip").innerText = stats.top_clip_title
-      ? `${stats.top_clip_title} (${stats.top_clip_views.toLocaleString()} views)`
-      : "Nenhum ainda";
+    
+    document.getElementById('dashboard-metrics').innerHTML = `
+      <div class="stat-item"><div class="stat-label">Total de Clipes</div><div class="stat-value">${stats.totalClips || 0}</div></div>
+      <div class="stat-item"><div class="stat-label">Visualizações totais</div><div class="stat-value">${stats.totalViews || 0}</div></div>
+      <div class="stat-item"><div class="stat-label">Curtidas totais</div><div class="stat-value">${stats.totalLikes || 0}</div></div>
+      <div class="stat-item"><div class="stat-label">Clipes Postados</div><div class="stat-value">${stats.postedClips || 0}</div></div>
+    `;
 
+    // Charts
     const statusCounts = await api.getClipsByStatusCount();
-    const statusLabels = statusCounts.map(s => s.status.toUpperCase());
-    const statusData = statusCounts.map(s => s.count);
-    createDoughnutChart("status-chart", statusLabels, statusData);
+    const statusLabels = Object.keys(statusCounts);
+    const statusData = Object.values(statusCounts);
+    
+    if (statusChart) statusChart.destroy();
+    statusChart = createDoughnutChart('status-chart', statusLabels, statusData);
 
+    // Mock bar chart data since we don't have historical views API yet
+    if (viewCountChart) viewCountChart.destroy();
+    viewCountChart = createBarChart('view-count-chart', ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'], [12, 19, 3, 5, 2, 3, 7], 'Visualizações');
+
+    // Table
     const topClips = await api.getTopClips(5);
-    const clipLabels = topClips.map(c => c.title.length > 15 ? c.title.substring(0, 15) + "..." : c.title);
-    const clipViews = topClips.map(c => c.views);
-    createBarChart("top-clips-chart", clipLabels, clipViews, "Views");
-
-    renderTopClipsTable(topClips);
-  } catch (err) {
-    console.error("Error loading dashboard data", err);
-    showToast(`Erro ao carregar dashboard: ${err}`, "error");
-  }
-}
-
-function renderTopClipsTable(topClips) {
-  const container = document.getElementById("top-clips-table-container");
-  if (!container) return;
-
-  if (topClips.length === 0) {
-    container.innerHTML = `<p class="muted-text">Adicione links do YouTube e sincronize o analytics para ver o ranking aqui.</p>`;
-    return;
-  }
-
-  container.innerHTML = `
-    <table class="clips-table">
-      <thead>
+    const tbody = document.getElementById('top-clips-table');
+    if (topClips && topClips.length > 0) {
+      tbody.innerHTML = topClips.map(clip => `
         <tr>
-          <th>#</th>
-          <th>Título</th>
-          <th>Visualizações</th>
-          <th>Likes</th>
-          <th>Status</th>
-          <th>Ações</th>
+          <td>${clip.title}</td>
+          <td>${clip.status}</td>
+          <td>${clip.platform || '-'}</td>
+          <td>${clip.views || 0}</td>
         </tr>
-      </thead>
-      <tbody>
-        ${topClips.map((c, index) => `
-          <tr>
-            <td><strong>#${index + 1}</strong></td>
-            <td>${c.title}</td>
-            <td><strong>${c.views.toLocaleString()} views</strong></td>
-            <td>${c.likes.toLocaleString()} likes</td>
-            <td><span class="category-tag category-none">${c.status}</span></td>
-            <td><a href="#/clip/${c.id}" class="btn-icon">Detalhes</a></td>
-          </tr>
-        `).join("")}
-      </tbody>
-    </table>
-  `;
+      `).join('');
+    } else {
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">Nenhum clipe encontrado</td></tr>`;
+    }
+  } catch (err) {
+    console.error('Failed to load dashboard data', err);
+    showToast('Erro ao carregar dados do dashboard', 'error');
+  }
 }

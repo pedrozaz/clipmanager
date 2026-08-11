@@ -1,248 +1,191 @@
-import { api } from "../bridge.js";
-import { renderFilterBar } from "../components/filter-bar.js";
-import { renderClipCard, renderClipRow } from "../components/clip-card.js";
-import { openModal } from "../components/modal.js";
-import { showToast } from "../components/toast.js";
+import * as api from '../bridge.js';
+import { renderFilterBar } from '../components/filter-bar.js';
+import { renderClipCard, renderClipRow } from '../components/clip-card.js';
+import { showModal } from '../components/modal.js';
+import { showToast } from '../components/toast.js';
 
-let currentViewMode = "grid";
-let clipsList = [];
-let categoriesList = [];
-let clipCategoriesMap = {};
+let clips = [];
+let categoriesMap = {};
+let currentViewMode = 'grid'; // 'grid' or 'list'
+let currentFilters = { search: '', status: '', categoryId: '', sortBy: 'date_desc' };
 
-export async function renderLibraryPage(container) {
-  try {
-    categoriesList = await api.listCategories();
-  } catch (err) {
-    console.error("Failed to load categories", err);
-    categoriesList = [];
-  }
-
+export async function renderLibrary(container) {
   container.innerHTML = `
-    <div class="library-header">
-      <h2>Biblioteca de Clipes</h2>
-    </div>
-    ${renderFilterBar(categoriesList)}
-    <div id="clips-display-container">
-      <div class="empty-state">
-        <p>Carregando clipes...</p>
+    <div class="page-header">
+      <div>
+        <h2>Biblioteca</h2>
+        <p class="page-subtitle">Organize e gerencie seus clipes de stream</p>
       </div>
+    </div>
+    <div id="filter-bar-container"></div>
+    <div id="clips-display-container" class="clips-grid mt-4">
+      <p class="text-muted">Carregando clipes...</p>
     </div>
   `;
 
-  setupFilterEvents(container);
-  await loadAndRenderClips();
+  await loadCategoriesMap();
+  
+  renderFilterBar(document.getElementById('filter-bar-container'), {
+    onSearch: (val) => { currentFilters.search = val; applyFilters(); },
+    onFilterStatus: (val) => { currentFilters.status = val; applyFilters(); },
+    onFilterCategory: (val) => { currentFilters.categoryId = val; applyFilters(); },
+    onSort: (val) => { currentFilters.sortBy = val; applyFilters(); },
+    onViewToggle: (mode) => { currentViewMode = mode; applyFilters(); },
+    onImportTwitch: handleImportTwitch,
+    onNewClip: handleNewClip,
+    categories: Object.values(categoriesMap)
+  });
+
+  await loadClips();
 }
 
-function setupFilterEvents(container) {
-  const searchInput = document.getElementById("search-input");
-  const statusFilter = document.getElementById("status-filter");
-  const categoryFilter = document.getElementById("category-filter");
-  const sortByFilter = document.getElementById("sort-by-filter");
-  const gridBtn = document.getElementById("view-grid-btn");
-  const listBtn = document.getElementById("view-list-btn");
-  const importTwitchBtn = document.getElementById("import-twitch-btn");
-  const newClipBtn = document.getElementById("new-clip-btn");
-
-  let debounceTimer;
-  searchInput?.addEventListener("input", () => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(loadAndRenderClips, 300);
-  });
-
-  statusFilter?.addEventListener("change", loadAndRenderClips);
-  categoryFilter?.addEventListener("change", loadAndRenderClips);
-  sortByFilter?.addEventListener("change", loadAndRenderClips);
-
-  gridBtn?.addEventListener("click", () => {
-    currentViewMode = "grid";
-    gridBtn.classList.add("active");
-    listBtn?.classList.remove("active");
-    renderClipsDisplay();
-  });
-
-  listBtn?.addEventListener("click", () => {
-    currentViewMode = "list";
-    listBtn.classList.add("active");
-    gridBtn?.classList.remove("active");
-    renderClipsDisplay();
-  });
-
-  importTwitchBtn?.addEventListener("click", handleImportTwitchClips);
-  newClipBtn?.addEventListener("click", handleCreateNewClip);
-}
-
-async function loadAndRenderClips() {
-  const searchInput = document.getElementById("search-input");
-  const statusFilter = document.getElementById("status-filter");
-  const categoryFilter = document.getElementById("category-filter");
-  const sortByFilter = document.getElementById("sort-by-filter");
-
-  const params = {
-    searchQuery: searchInput?.value.trim() || null,
-    filterStatus: statusFilter?.value || null,
-    filterCategoryId: categoryFilter?.value ? Number(categoryFilter.value) : null,
-    sortBy: sortByFilter?.value || "created_at",
-    sortOrder: "DESC",
-  };
-
+async function loadCategoriesMap() {
   try {
-    clipsList = await api.listClips(params);
-    clipCategoriesMap = {};
-    await Promise.all(
-      clipsList.map(async (clip) => {
-        try {
-          const cats = await api.getClipCategories(clip.id);
-          clipCategoriesMap[clip.id] = cats;
-        } catch (_) {
-          clipCategoriesMap[clip.id] = [];
-        }
-      })
-    );
-    renderClipsDisplay();
-  } catch (err) {
-    showToast(`Erro ao carregar clipes: ${err}`, "error");
+    const cats = await api.getCategories();
+    categoriesMap = {};
+    cats.forEach(c => categoriesMap[c.id] = c);
+  } catch(e) {
+    console.error('Failed to load categories map', e);
   }
 }
 
-function renderClipsDisplay() {
-  const displayContainer = document.getElementById("clips-display-container");
-  if (!displayContainer) return;
+async function loadClips() {
+  try {
+    clips = await api.getClips();
+    applyFilters();
+  } catch(e) {
+    document.getElementById('clips-display-container').innerHTML = '<p class="text-error">Erro ao carregar clipes</p>';
+  }
+}
 
-  if (clipsList.length === 0) {
-    displayContainer.innerHTML = `
-      <div class="empty-state">
-        <h3>Nenhum clipe encontrado</h3>
-        <p>Importe clipes da Twitch ou adicione manualmente.</p>
-        <button id="empty-new-btn" class="btn btn-primary" style="margin-top: 12px;">Criar Primeiro Clipe</button>
-      </div>
-    `;
-    document.getElementById("empty-new-btn")?.addEventListener("click", handleCreateNewClip);
+function applyFilters() {
+  let filtered = [...clips];
+  
+  if (currentFilters.search) {
+    const q = currentFilters.search.toLowerCase();
+    filtered = filtered.filter(c => c.title.toLowerCase().includes(q) || (c.notes && c.notes.toLowerCase().includes(q)));
+  }
+  
+  if (currentFilters.status) {
+    filtered = filtered.filter(c => c.status === currentFilters.status);
+  }
+
+  if (currentFilters.categoryId) {
+    filtered = filtered.filter(c => c.category_ids && c.category_ids.includes(parseInt(currentFilters.categoryId)));
+  }
+
+  filtered.sort((a, b) => {
+    switch(currentFilters.sortBy) {
+      case 'date_asc': return new Date(a.created_at) - new Date(b.created_at);
+      case 'date_desc': return new Date(b.created_at) - new Date(a.created_at);
+      case 'title_asc': return a.title.localeCompare(b.title);
+      case 'views_desc': return (b.views || 0) - (a.views || 0);
+      default: return 0;
+    }
+  });
+
+  renderClipsDisplay(filtered);
+}
+
+function renderClipsDisplay(filteredClips) {
+  const container = document.getElementById('clips-display-container');
+  
+  if (filteredClips.length === 0) {
+    container.innerHTML = '<p class="text-muted">Nenhum clipe encontrado com os filtros atuais.</p>';
+    container.className = 'mt-4';
     return;
   }
 
-  if (currentViewMode === "grid") {
-    displayContainer.innerHTML = `
-      <div class="clips-grid">
-        ${clipsList.map(clip => renderClipCard(clip, clipCategoriesMap[clip.id] || [])).join("")}
-      </div>
-    `;
+  if (currentViewMode === 'grid') {
+    container.className = 'clips-grid mt-4';
+    container.innerHTML = filteredClips.map(clip => renderClipCard(clip, categoriesMap)).join('');
   } else {
-    displayContainer.innerHTML = `
-      <div class="clips-table-wrapper">
-        <table class="clips-table">
-          <thead>
-            <tr>
-              <th>Título</th>
-              <th>Status</th>
-              <th>Categorias</th>
-              <th>Data</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${clipsList.map(clip => renderClipRow(clip, clipCategoriesMap[clip.id] || [])).join("")}
-          </tbody>
-        </table>
-      </div>
+    container.className = 'clips-list mt-4';
+    container.innerHTML = `
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Miniatura</th>
+            <th>Título</th>
+            <th>Status</th>
+            <th>Data</th>
+            <th>Visualizações</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filteredClips.map(clip => renderClipRow(clip, categoriesMap)).join('')}
+        </tbody>
+      </table>
     `;
   }
 
-  document.querySelectorAll(".clip-card, .btn-detail").forEach(elem => {
-    elem.addEventListener("click", (e) => {
-      const clipId = elem.getAttribute("data-clip-id") || elem.getAttribute("data-id");
-      if (clipId) {
-        window.location.hash = `#/clip/${clipId}`;
-      }
+  // Setup click handlers for navigating to detail
+  container.querySelectorAll('.clip-item-link').forEach(el => {
+    el.addEventListener('click', (e) => {
+      // Handled by router in main app if we use href, or we dispatch an event
+      const id = el.getAttribute('data-id');
+      window.location.hash = '#/clip/' + id;
     });
   });
 }
 
-function handleImportTwitchClips() {
-  openModal({
-    title: "Importar Clipes da Twitch",
-    confirmText: "Iniciar Importação",
-    contentHtml: `
-      <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 12px;">
-        O app irá buscar os clipes da sua conta da Twitch e importar os que ainda não foram salvos.
-      </p>
+function handleImportTwitch() {
+  showModal({
+    title: 'Importar da Twitch',
+    body: `
+      <p class="text-sm mb-3">Busca os clipes mais recentes do canal configurado.</p>
       <div class="form-group">
-        <label for="import-days-select">Período de busca</label>
-        <select id="import-days-select">
-          <option value="7">Últimos 7 dias</option>
-          <option value="30" selected>Últimos 30 dias</option>
-          <option value="90">Últimos 90 dias</option>
-          <option value="365">Último ano</option>
-        </select>
+        <label>Quantidade limite</label>
+        <input type="number" id="twitch-import-limit" class="form-input" value="20" min="1" max="100">
       </div>
     `,
-    onConfirm: async () => {
-      const days = document.getElementById("import-days-select")?.value || "30";
-      showToast("Buscando clipes na API da Twitch...", "info");
-      try {
-        const res = await api.importTwitchClips(days);
-        showToast(`Importação concluída! ${res.imported} novos clipes, ${res.skipped} já existiam.`, "success");
-        await loadAndRenderClips();
-        return true;
-      } catch (err) {
-        showToast(`Erro na importação: ${err}`, "error");
-        return false;
-      }
-    }
+    buttons: [
+      { text: 'Cancelar', class: 'btn btn-secondary', close: true },
+      { text: 'Importar', class: 'btn btn-primary', onClick: async (modal) => {
+        try {
+          const limit = document.getElementById('twitch-import-limit').value;
+          showToast('Iniciando importação...', 'info');
+          modal.close();
+          const result = await api.importTwitchClips(parseInt(limit));
+          showToast(`Importação concluída: ${result.count} novos clipes`, 'success');
+          loadClips();
+        } catch(e) {
+          showToast('Erro na importação: ' + e.message, 'error');
+        }
+      }}
+    ]
   });
 }
 
-function handleCreateNewClip() {
-  openModal({
-    title: "Novo Clipe",
-    confirmText: "Criar Clipe",
-    contentHtml: `
+function handleNewClip() {
+  showModal({
+    title: 'Adicionar Clipe Manual',
+    body: `
       <div class="form-group">
-        <label for="clip-title-input">Título do Clipe *</label>
-        <input type="text" id="clip-title-input" placeholder="Ex: Play insana no Ascent" required />
+        <label>Título</label>
+        <input type="text" id="manual-clip-title" class="form-input">
       </div>
       <div class="form-group">
-        <label for="clip-twitch-url-input">Link da Twitch (opcional)</label>
-        <input type="text" id="clip-twitch-url-input" placeholder="https://clips.twitch.tv/..." />
-      </div>
-      <div class="form-group">
-        <label for="clip-date-input">Data do Clipe</label>
-        <input type="date" id="clip-date-input" value="${new Date().toISOString().split('T')[0]}" />
-      </div>
-      <div class="form-group">
-        <label for="clip-status-select">Status Inicial</label>
-        <select id="clip-status-select">
-          <option value="novo">Novo</option>
-          <option value="editando">Editando</option>
-          <option value="editado">Editado</option>
-          <option value="postado">Postado</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="clip-notes-input">Anotações</label>
-        <textarea id="clip-notes-input" rows="3" placeholder="Detalhes do clipe..."></textarea>
+        <label>URL Original</label>
+        <input type="text" id="manual-clip-url" class="form-input">
       </div>
     `,
-    onConfirm: async () => {
-      const title = document.getElementById("clip-title-input")?.value.trim();
-      const twitchUrl = document.getElementById("clip-twitch-url-input")?.value.trim() || null;
-      const clipDate = document.getElementById("clip-date-input")?.value || null;
-      const status = document.getElementById("clip-status-select")?.value || "novo";
-      const notes = document.getElementById("clip-notes-input")?.value.trim() || null;
-
-      if (!title) {
-        showToast("O título do clipe é obrigatório!", "error");
-        return false;
-      }
-
-      try {
-        await api.createClip({ title, twitchUrl, clipDate, status, notes });
-        showToast("Clipe criado com sucesso!", "success");
-        await loadAndRenderClips();
-        return true;
-      } catch (err) {
-        showToast(`Erro ao criar clipe: ${err}`, "error");
-        return false;
-      }
-    }
+    buttons: [
+      { text: 'Cancelar', class: 'btn btn-secondary', close: true },
+      { text: 'Criar', class: 'btn btn-primary', onClick: async (modal) => {
+        const title = document.getElementById('manual-clip-title').value;
+        const url = document.getElementById('manual-clip-url').value;
+        if(title) {
+          try {
+            await api.createClip({ title, original_url: url, status: 'Novo' });
+            showToast('Clipe criado', 'success');
+            modal.close();
+            loadClips();
+          } catch(e) {
+            showToast('Erro ao criar', 'error');
+          }
+        }
+      }}
+    ]
   });
 }

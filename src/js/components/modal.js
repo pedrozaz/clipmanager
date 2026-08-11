@@ -1,43 +1,55 @@
-export function openModal({ title, contentHtml, onConfirm, confirmText = "Salvar" }) {
+export function showModal({ title, body, buttons }) {
   let modalOverlay = document.getElementById("modal-overlay");
   if (modalOverlay) modalOverlay.remove();
 
   modalOverlay = document.createElement("div");
   modalOverlay.id = "modal-overlay";
   modalOverlay.className = "modal-overlay";
+
+  const buttonsHtml = (buttons || [])
+    .map((btn, index) => {
+      const type = btn.type || "button";
+      return `<button id="modal-btn-${index}" class="${btn.class || 'btn btn-secondary'}" type="${type}">${btn.text}</button>`;
+    })
+    .join("");
+
   modalOverlay.innerHTML = `
-    <div class="modal-card">
+    <div class="modal-content">
       <header class="modal-header">
-        <h3>${title}</h3>
-        <button id="modal-close-btn" class="modal-close-btn">&times;</button>
+        <h3 class="modal-title">${title}</h3>
       </header>
       <div class="modal-body">
-        ${contentHtml}
+        ${body}
       </div>
       <footer class="modal-footer">
-        <button id="modal-cancel-btn" class="btn btn-secondary">Cancelar</button>
-        <button id="modal-confirm-btn" class="btn btn-primary">${confirmText}</button>
+        ${buttonsHtml}
       </footer>
     </div>
   `;
 
   document.body.appendChild(modalOverlay);
 
-  const closeModal = () => modalOverlay.remove();
+  const modalAPI = {
+    close: () => modalOverlay.remove(),
+    element: modalOverlay
+  };
 
-  document.getElementById("modal-close-btn").addEventListener("click", closeModal);
-  document.getElementById("modal-cancel-btn").addEventListener("click", closeModal);
-  
   modalOverlay.addEventListener("click", (e) => {
-    if (e.target === modalOverlay) closeModal();
+    if (e.target === modalOverlay) modalAPI.close();
   });
 
-  document.getElementById("modal-confirm-btn").addEventListener("click", async () => {
-    if (onConfirm) {
-      const success = await onConfirm(modalOverlay);
-      if (success !== false) closeModal();
-    } else {
-      closeModal();
-    }
-  });
+  if (buttons) {
+    buttons.forEach((btn, index) => {
+      const btnEl = document.getElementById(`modal-btn-${index}`);
+      if (btnEl) {
+        btnEl.addEventListener("click", async () => {
+          if (btn.onClick) {
+            await btn.onClick(modalAPI);
+          } else if (btn.close) {
+            modalAPI.close();
+          }
+        });
+      }
+    });
+  }
 }

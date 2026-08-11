@@ -1,88 +1,94 @@
-let chartInstances = {};
+// Assumes Chart.js is loaded globally in the app window
 
-export function createBarChart(canvasId, labels, dataValues, labelName = "Views") {
-  const ctx = document.getElementById(canvasId);
-  if (!ctx || !window.Chart) return;
-
-  if (chartInstances[canvasId]) {
-    chartInstances[canvasId].destroy();
+const globalChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  color: '#a0a0ab', // Legend and general text color
+  plugins: {
+    legend: {
+      labels: {
+        color: '#a0a0ab'
+      }
+    }
   }
+};
 
-  chartInstances[canvasId] = new window.Chart(ctx, {
-    type: "bar",
+export function createBarChart(canvasId, labels, data, dataLabel) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  
+  return new Chart(ctx, {
+    type: 'bar',
     data: {
-      labels,
-      datasets: [
-        {
-          label: labelName,
-          data: dataValues,
-          backgroundColor: "#8b5cf6",
-          borderRadius: 6,
-        },
-      ],
+      labels: labels,
+      datasets: [{
+        label: dataLabel,
+        data: data,
+        backgroundColor: '#9146ff',
+        borderRadius: 4
+      }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          labels: { color: "#a1a1aa" },
-        },
-      },
+      ...globalChartOptions,
       scales: {
-        x: {
-          ticks: { color: "#a1a1aa" },
-          grid: { color: "#27273a" },
-        },
         y: {
-          ticks: { color: "#a1a1aa" },
-          grid: { color: "#27273a" },
+          beginAtZero: true,
+          grid: {
+            color: '#1c1c22'
+          },
+          ticks: {
+            color: '#5a5a66'
+          }
         },
-      },
-    },
+        x: {
+          grid: {
+            display: false
+          },
+          ticks: {
+            color: '#5a5a66'
+          }
+        }
+      }
+    }
   });
 }
 
-export function createDoughnutChart(canvasId, labels, dataValues) {
-  const ctx = document.getElementById(canvasId);
-  if (!ctx || !window.Chart) return;
-
-  if (chartInstances[canvasId]) {
-    chartInstances[canvasId].destroy();
-  }
-
+export function createDoughnutChart(canvasId, labels, data) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  
   const statusColors = {
-    novo: "#3b82f6",
-    editando: "#f59e0b",
-    editado: "#8b5cf6",
-    postado: "#10b981",
-    descartado: "#6b7280",
+    'Novo': '#5b8def',
+    'Editando': '#f0a030',
+    'Editado': '#a78bfa',
+    'Postado': '#34d399',
+    'Descartado': '#6b7280'
   };
 
-  const bgColors = labels.map(l => statusColors[l.toLowerCase()] || "#8b5cf6");
+  const bgColors = labels.map(label => statusColors[label] || '#4b5563');
 
-  chartInstances[canvasId] = new window.Chart(ctx, {
-    type: "doughnut",
+  return new Chart(ctx, {
+    type: 'doughnut',
     data: {
-      labels,
-      datasets: [
-        {
-          data: dataValues,
-          backgroundColor: bgColors,
-          borderWidth: 2,
-          borderColor: "#121217",
-        },
-      ],
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: bgColors,
+        borderColor: '#0f0f12',
+        borderWidth: 2
+      }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      ...globalChartOptions,
+      cutout: '70%',
       plugins: {
         legend: {
-          position: "right",
-          labels: { color: "#a1a1aa" },
-        },
-      },
-    },
+          position: 'right',
+          labels: {
+            color: '#a0a0ab',
+            usePointStyle: true,
+            padding: 20
+          }
+        }
+      }
+    }
   });
 }

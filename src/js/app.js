@@ -1,12 +1,12 @@
-import { renderLibraryPage } from "./pages/library.js";
-import { renderClipDetailPage } from "./pages/clip-detail.js";
-import { renderSettingsPage } from "./pages/settings.js";
-import { renderDashboardPage } from "./pages/dashboard.js";
+import { renderLibrary } from "./pages/library.js";
+import { renderClipDetail } from "./pages/clip-detail.js";
+import { renderSettings } from "./pages/settings.js";
+import { renderDashboard } from "./pages/dashboard.js";
 
 const routes = {
-  "/library": renderLibraryPage,
-  "/settings": renderSettingsPage,
-  "/dashboard": renderDashboardPage,
+  "/library": renderLibrary,
+  "/settings": renderSettings,
+  "/dashboard": renderDashboard,
 };
 
 function handleRoute() {
@@ -17,19 +17,19 @@ function handleRoute() {
 
   if (hash.startsWith("/clip/")) {
     const clipId = hash.split("/clip/")[1];
-    renderClipDetailPage(container, clipId);
-    document.querySelectorAll(".nav-item a").forEach((link) => link.classList.remove("active"));
+    renderClipDetail(container, clipId);
+    document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
     return;
   }
 
-  const routeHandler = routes[hash] || renderLibraryPage;
+  const routeHandler = routes[hash] || renderLibrary;
 
-  document.querySelectorAll(".nav-item a").forEach((link) => {
-    const linkHash = link.getAttribute("href").replace("#", "");
-    if (linkHash === hash) {
-      link.classList.add("active");
+  document.querySelectorAll(".nav-item").forEach((item) => {
+    const link = item.getAttribute("href")?.replace("#", "") || "";
+    if (link === hash) {
+      item.classList.add("active");
     } else {
-      link.classList.remove("active");
+      item.classList.remove("active");
     }
   });
 
