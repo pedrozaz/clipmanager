@@ -26,13 +26,14 @@
 - **Frontend:** HTML5 Semântico, Vanilla CSS (Dark Mode Design System com tokens customizados), Vanilla JavaScript ES6+ em módulos.
 - **Desktop Framework:** Tauri 2.x (Bridge IPC via `window.__TAURI__.core.invoke`).
 - **Gráficos:** Chart.js 4.4 (Bundle local offline).
+- **Gerenciador de Pacotes:** `pnpm`.
 
 ---
 
 ## 🚀 Como Executar o Projeto
 
 ### Pré-requisitos
-- [Node.js](https://nodejs.org) (v18+)
+- [Node.js](https://nodejs.org) (v18+) e [pnpm](https://pnpm.io)
 - [Rust & Cargo](https://rustup.rs) (Edition 2024)
 - Dependências de sistema do Tauri 2.x para Linux/Windows
 
@@ -44,8 +45,13 @@ cd clipmanager
 
 ### 2. Instalar dependências e rodar em desenvolvimento
 ```bash
-npm install
-npm run tauri dev
+pnpm install
+pnpm tauri dev
+```
+
+*Nota para Linux (Wayland):* Se ocorrer erro de protocolo GDK/Wayland, execute com o fallback XWayland:
+```bash
+GDK_BACKEND=x11 pnpm tauri dev
 ```
 
 ### 3. Rodar a suíte de testes unitários e de integração
@@ -55,7 +61,7 @@ cargo test --manifest-path src-tauri/Cargo.toml
 
 ### 4. Gerar o executável de produção
 ```bash
-npm run tauri build
+pnpm tauri build
 ```
 
 ---
