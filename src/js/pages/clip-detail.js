@@ -7,6 +7,24 @@ import { showToast } from '../components/toast.js';
 let currentClip = null;
 let allCategories = [];
 
+function getTwitchEmbedUrl(clip) {
+  const url = clip.embed_url || clip.twitch_url || '';
+  if (!url) return null;
+
+  let slug = null;
+  const match = url.match(/(?:clips\.twitch\.tv\/|twitch\.tv\/[^\/]+\/clip\/)([A-Za-z0-9_-]+)/);
+  if (match && match[1]) {
+    slug = match[1];
+  } else if (!url.includes('/') && url.length > 5) {
+    slug = url;
+  }
+
+  if (slug) {
+    return `https://clips.twitch.tv/embed?clip=${encodeURIComponent(slug)}&parent=localhost&parent=tauri.localhost&parent=127.0.0.1&autoplay=false`;
+  }
+  return null;
+}
+
 export async function renderClipDetail(container, clipId) {
   try {
     currentClip = await api.getClip(clipId);
@@ -39,6 +57,7 @@ export async function renderClipDetail(container, clipId) {
   const youtubeViews = latestYt ? (latestYt.views || 0) : 0;
   const totalViews = twitchViews + youtubeViews;
   const clipCategories = (allCategories || []).filter(c => currentClip.category_ids && currentClip.category_ids.includes(c.id));
+  const embedUrl = getTwitchEmbedUrl(currentClip);
 
   container.innerHTML = `
     <div class="page-header d-flex justify-content-between">
@@ -55,6 +74,19 @@ export async function renderClipDetail(container, clipId) {
 
     <div class="clip-detail-grid">
       <div class="main-column">
+        ${embedUrl ? `
+          <div class="section-card mb-4" style="padding:0; overflow:hidden; border-radius: var(--radius-lg); background:#000; border: 1px solid var(--border-subtle);">
+            <div style="position:relative; padding-bottom:56.25%; height:0; width:100%;">
+              <iframe
+                src="${embedUrl}"
+                height="100%"
+                width="100%"
+                style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;"
+                allowfullscreen="true">
+              </iframe>
+            </div>
+          </div>
+        ` : ''}
         <div class="section-card mb-4">
           <div class="form-group">
             <label>Título do Clipe</label>
