@@ -18,12 +18,11 @@ export async function renderLibraryPage(container) {
 
   container.innerHTML = `
     <div class="library-header">
-      <h2>📚 Biblioteca de Clipes</h2>
+      <h2>Biblioteca de Clipes</h2>
     </div>
     ${renderFilterBar(categoriesList)}
     <div id="clips-display-container">
       <div class="empty-state">
-        <span class="empty-icon">⏳</span>
         <p>Carregando clipes...</p>
       </div>
     </div>
@@ -98,10 +97,9 @@ function renderClipsDisplay() {
   if (clipsList.length === 0) {
     displayContainer.innerHTML = `
       <div class="empty-state">
-        <span class="empty-icon">🎬</span>
         <h3>Nenhum clipe encontrado</h3>
         <p>Importe clipes da Twitch ou adicione manualmente.</p>
-        <button id="empty-new-btn" class="btn btn-primary" style="margin-top: 12px;">➕ Criar Primeiro Clipe</button>
+        <button id="empty-new-btn" class="btn btn-primary" style="margin-top: 12px;">Criar Primeiro Clipe</button>
       </div>
     `;
     document.getElementById("empty-new-btn")?.addEventListener("click", handleCreateNewClip);
@@ -147,7 +145,7 @@ function renderClipsDisplay() {
 
 function handleImportTwitchClips() {
   openModal({
-    title: "💜 Importar Clipes da Twitch",
+    title: "Importar Clipes da Twitch",
     confirmText: "Iniciar Importação",
     contentHtml: `
       <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 12px;">
@@ -181,7 +179,7 @@ function handleImportTwitchClips() {
 
 function handleCreateNewClip() {
   openModal({
-    title: "➕ Novo Clipe",
+    title: "Novo Clipe",
     confirmText: "Criar Clipe",
     contentHtml: `
       <div class="form-group">

@@ -1,56 +1,46 @@
 :root {
-  --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-  
-  /* Solid, High-Contrast Surface Palette (Zero Unintended Transparency) */
-  --color-bg-primary: #0b0d12;
-  --color-bg-surface: #12151e;
-  --color-bg-card: #181c28;
-  --color-bg-input: #1a1e2c;
-  --color-bg-hover: #23293a;
-  
-  --color-border: #282f44;
-  --color-border-hover: #3b4563;
-  --color-border-focus: #ff4655;
+  --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
-  /* Authentic Streamer/Esports Accents (Twitch Purple + Valorant Red) */
-  --color-twitch: #9146ff;
-  --color-valorant: #ff4655;
-  --color-accent: #9146ff;
-  --color-accent-hover: #772ce8;
-  --color-accent-light: rgba(145, 70, 255, 0.15);
-  
-  --gradient-brand: linear-gradient(135deg, #ff4655 0%, #9146ff 100%);
-  --gradient-card: linear-gradient(180deg, #1d2232 0%, #151824 100%);
+  /* Solid Opaque Streaming Dark Surfaces */
+  --color-bg-primary: #141414;
+  --color-bg-surface: #181818;
+  --color-bg-card: #1f1f1f;
+  --color-bg-input: #2b2b2b;
+  --color-bg-hover: #333333;
+  --color-bg-modal: #222222;
 
-  /* High-Contrast Status Indicators */
-  --status-new: #38bdf8;
-  --status-editing: #fbbf24;
-  --status-edited: #c084fc;
-  --status-posted: #34d399;
-  --status-archived: #94a3b8;
+  --color-border: #2e2e2e;
+  --color-border-hover: #444444;
 
-  /* Typography Colors */
-  --color-text-primary: #f8fafc;
-  --color-text-secondary: #a0aec0;
-  --color-text-muted: #64748b;
+  /* Streaming Red & Violet Highlights */
+  --color-accent: #E50914;
+  --color-accent-hover: #B81D24;
+  --color-accent-secondary: #9146FF;
 
-  /* Spacing System */
+  /* Status Colors */
+  --status-new: #3B82F6;
+  --status-editing: #F59E0B;
+  --status-edited: #8B5CF6;
+  --status-posted: #10B981;
+  --status-archived: #6B7280;
+
+  /* High Contrast Text */
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #AAAAAA;
+  --color-text-muted: #666666;
+
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 16px;
   --space-lg: 24px;
   --space-xl: 32px;
 
-  /* Radii */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
   --radius-full: 9999px;
 
-  /* Transitions & Elevation Shadows */
-  --transition-fast: 120ms ease;
-  --transition-normal: 200ms ease;
-  --shadow-card: 0 8px 24px -6px rgba(0, 0, 0, 0.6);
-  --shadow-accent: 0 4px 18px rgba(255, 70, 85, 0.25);
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
 }

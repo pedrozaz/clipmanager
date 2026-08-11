@@ -10,7 +10,7 @@ export function renderClipCard(clip, categories = []) {
 
   const thumbnailHtml = clip.thumbnail_url
     ? `<img src="${clip.thumbnail_url}" alt="${clip.title}" loading="lazy" />`
-    : `<div class="clip-thumbnail-placeholder">🎬</div>`;
+    : `<div class="clip-thumbnail-placeholder">ClipManager</div>`;
 
   return `
     <div class="clip-card" data-clip-id="${clip.id}">
@@ -23,7 +23,7 @@ export function renderClipCard(clip, categories = []) {
       <div class="clip-card-content">
         <h4 class="clip-title" title="${clip.title}">${clip.title}</h4>
         <div class="clip-meta">
-          <span class="clip-date">📅 ${dateStr}</span>
+          <span class="clip-date">${dateStr}</span>
         </div>
         <div class="clip-categories">
           ${categoryTagsHtml}
@@ -46,7 +46,7 @@ export function renderClipRow(clip, categories = []) {
       <td class="col-categories">${categoryTagsHtml}</td>
       <td class="col-date">${dateStr}</td>
       <td class="col-actions">
-        <button class="btn-icon btn-detail" data-id="${clip.id}">👁️ Ver</button>
+        <button class="btn-icon btn-detail" data-id="${clip.id}">Detalhes</button>
       </td>
     </tr>
   `;

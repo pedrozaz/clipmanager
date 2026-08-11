@@ -6,7 +6,7 @@ export function renderFilterBar(categories = []) {
   return `
     <div class="filter-bar">
       <div class="filter-search">
-        <input type="text" id="search-input" placeholder="🔍 Buscar clipe..." />
+        <input type="text" id="search-input" placeholder="Buscar clipe pelo título..." />
       </div>
 
       <div class="filter-controls">
@@ -30,12 +30,12 @@ export function renderFilterBar(categories = []) {
         </select>
 
         <div class="view-toggle">
-          <button id="view-grid-btn" class="btn-toggle active" title="Visualização em Grid">📌 Grid</button>
-          <button id="view-list-btn" class="btn-toggle" title="Visualização em Lista">📋 Lista</button>
+          <button id="view-grid-btn" class="btn-toggle active" title="Visualização em Grid">Grid</button>
+          <button id="view-list-btn" class="btn-toggle" title="Visualização em Lista">Lista</button>
         </div>
 
-        <button id="import-twitch-btn" class="btn btn-secondary" style="border: 1px solid var(--color-accent); color: var(--color-accent);">💜 Importar da Twitch</button>
-        <button id="new-clip-btn" class="btn btn-primary">➕ Novo Clipe</button>
+        <button id="import-twitch-btn" class="btn btn-secondary">Importar Twitch</button>
+        <button id="new-clip-btn" class="btn btn-primary">Novo Clipe</button>
       </div>
     </div>
   `;

@@ -16,12 +16,12 @@ export async function renderSettingsPage(container) {
 
   container.innerHTML = `
     <div class="settings-header">
-      <h2>⚙️ Configurações do App</h2>
+      <h2>Configurações do App</h2>
     </div>
 
     <div class="settings-grid">
       <div class="settings-card">
-        <h3>🟣 Twitch API Settings</h3>
+        <h3>Twitch API</h3>
         <p class="settings-desc">Necessário para importar clipes automaticamente da sua live.</p>
         <div class="form-group">
           <label for="setting-twitch-client-id">Client ID</label>
@@ -32,17 +32,17 @@ export async function renderSettingsPage(container) {
           <input type="password" id="setting-twitch-client-secret" value="${settingsMap['twitch_client_secret'] || ''}" placeholder="Ex: •••••••••••••••••" />
         </div>
         <div class="form-group">
-          <label for="setting-twitch-username">Seu Nome de Usuário na Twitch</label>
+          <label for="setting-twitch-username">Nome de Usuário na Twitch</label>
           <input type="text" id="setting-twitch-username" value="${settingsMap['twitch_username'] || ''}" placeholder="Ex: streamername" />
         </div>
         <div class="button-group" style="display: flex; gap: 8px;">
           <button id="save-twitch-btn" class="btn btn-primary">Salvar Credenciais Twitch</button>
-          <button id="test-twitch-btn" class="btn btn-secondary">⚡ Testar Conexão</button>
+          <button id="test-twitch-btn" class="btn btn-secondary">Testar Conexão</button>
         </div>
       </div>
 
       <div class="settings-card">
-        <h3>🔴 YouTube Data API Settings</h3>
+        <h3>YouTube Data API</h3>
         <p class="settings-desc">Usado para buscar contagem de views e likes dos seus vídeos/shorts.</p>
         <div class="form-group">
           <label for="setting-youtube-api-key">YouTube Data API Key v3</label>
@@ -50,12 +50,12 @@ export async function renderSettingsPage(container) {
         </div>
         <div class="button-group" style="display: flex; gap: 8px;">
           <button id="save-youtube-btn" class="btn btn-primary">Salvar Chave YouTube</button>
-          <button id="test-youtube-btn" class="btn btn-secondary">⚡ Testar Conexão</button>
+          <button id="test-youtube-btn" class="btn btn-secondary">Testar Conexão</button>
         </div>
       </div>
 
       <div class="settings-card">
-        <h3>🎮 Valorant / Riot Games Settings</h3>
+        <h3>Valorant / Riot Games</h3>
         <p class="settings-desc">Usado pela Henrik API para buscar dados da partida no momento do clipe.</p>
         <div class="form-group">
           <label for="setting-riot-id">Riot ID (Nome#Tag)</label>
@@ -81,14 +81,14 @@ export async function renderSettingsPage(container) {
         </div>
         <div class="button-group" style="display: flex; gap: 8px;">
           <button id="save-valorant-btn" class="btn btn-primary">Salvar Dados Valorant</button>
-          <button id="test-valorant-btn" class="btn btn-secondary">⚡ Testar Conexão</button>
+          <button id="test-valorant-btn" class="btn btn-secondary">Testar Conexão</button>
         </div>
       </div>
 
       <div class="settings-card settings-card-wide">
         <div class="card-header-flex">
-          <h3>🏷️ Gerenciar Categorias</h3>
-          <button id="create-category-btn" class="btn btn-primary">➕ Nova Categoria</button>
+          <h3>Gerenciar Categorias</h3>
+          <button id="create-category-btn" class="btn btn-primary">Nova Categoria</button>
         </div>
         <p class="settings-desc">Crie categorias para organizar seus clipes (ex: Engraçado, Highlight, Play Insana).</p>
         
@@ -97,19 +97,19 @@ export async function renderSettingsPage(container) {
             <div class="category-item-card">
               <span class="color-dot" style="background-color: ${c.color || '#8b5cf6'}"></span>
               <span class="category-name">${c.name}</span>
-              <button class="btn-icon delete-cat-btn" data-id="${c.id}" data-name="${c.name}">🗑️</button>
+              <button class="btn-icon delete-cat-btn" data-id="${c.id}" data-name="${c.name}">Excluir</button>
             </div>
           `).join('')}
         </div>
       </div>
 
       <div class="settings-card settings-card-wide">
-        <h3>💾 Backup e Exportação</h3>
+        <h3>Backup e Exportação</h3>
         <p class="settings-desc">Exporte ou restaure um backup completo do app ou baixe uma planilha em CSV.</p>
         <div class="button-group" style="display: flex; gap: 12px; flex-wrap: wrap;">
-          <button id="export-json-btn" class="btn btn-secondary">📥 Exportar Backup JSON</button>
-          <button id="export-csv-btn" class="btn btn-secondary">📊 Exportar Clipes (CSV)</button>
-          <button id="import-json-btn" class="btn btn-primary">📤 Restaurar Backup JSON</button>
+          <button id="export-json-btn" class="btn btn-secondary">Exportar Backup JSON</button>
+          <button id="export-csv-btn" class="btn btn-secondary">Exportar Clipes (CSV)</button>
+          <button id="import-json-btn" class="btn btn-primary">Restaurar Backup JSON</button>
           <input type="file" id="import-file-input" accept=".json" style="display: none;" />
         </div>
       </div>
@@ -192,7 +192,7 @@ function setupSettingsEvents(container) {
 
   document.getElementById("create-category-btn")?.addEventListener("click", () => {
     openModal({
-      title: "🏷️ Nova Categoria",
+      title: "Nova Categoria",
       confirmText: "Criar Categoria",
       contentHtml: `
         <div class="form-group">
@@ -232,7 +232,7 @@ function setupSettingsEvents(container) {
       const name = btn.getAttribute("data-name");
 
       openModal({
-        title: "🗑️ Excluir Categoria",
+        title: "Excluir Categoria",
         confirmText: "Excluir",
         contentHtml: `<p>Deseja excluir a categoria <strong>"${name}"</strong>?</p>`,
         onConfirm: async () => {
@@ -283,7 +283,7 @@ function setupSettingsEvents(container) {
     reader.onload = async (evt) => {
       const jsonContent = evt.target.result;
       openModal({
-        title: "📤 Restaurar Backup JSON",
+        title: "Restaurar Backup JSON",
         confirmText: "Sim, Restaurar",
         contentHtml: `<p>Tem certeza que deseja restaurar o backup a partir de <strong>${file.name}</strong>?</p>`,
         onConfirm: async () => {

@@ -1,15 +1,16 @@
-/* App Shell & Layout */
+/* App Shell & Sidebar Layout */
 .app-shell {
   display: flex;
   width: 100vw;
   height: 100vh;
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
+  font-family: var(--font-family);
   overflow: hidden;
 }
 
 .sidebar {
-  width: 250px;
+  width: 230px;
   background-color: var(--color-bg-surface);
   border-right: 1px solid var(--color-border);
   display: flex;
@@ -26,66 +27,62 @@
   padding: 0 var(--space-xs);
 }
 
-.brand-icon {
-  font-size: 1.8rem;
-  line-height: 1;
-}
-
-.brand-text {
-  display: flex;
-  flex-direction: column;
+.brand-logo-mark {
+  background-color: var(--color-accent);
+  color: #fff;
+  font-weight: 900;
+  font-size: 0.9rem;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  letter-spacing: -0.05em;
 }
 
 .brand-name {
-  font-weight: 800;
-  font-size: 1.15rem;
+  font-weight: 700;
+  font-size: 1.1rem;
   letter-spacing: -0.02em;
   color: var(--color-text-primary);
-}
-
-.brand-tag {
-  font-size: 0.65rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  color: var(--color-valorant);
-  text-transform: uppercase;
 }
 
 .nav-list {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .nav-item a {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
-  padding: 11px 16px;
+  gap: 12px;
+  padding: 10px 14px;
   border-radius: var(--radius-md);
   color: var(--color-text-secondary);
   font-weight: 600;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   transition: all var(--transition-fast);
   text-decoration: none;
-  border: 1px solid transparent;
 }
 
 .nav-item a:hover {
   background-color: var(--color-bg-hover);
   color: var(--color-text-primary);
-  border-color: var(--color-border);
 }
 
 .nav-item a.active {
-  background-color: rgba(145, 70, 255, 0.15);
-  color: #fff;
-  border: 1px solid rgba(145, 70, 255, 0.4);
+  background-color: var(--color-bg-card);
+  color: var(--color-text-primary);
+  border-left: 3px solid var(--color-accent);
 }
 
 .nav-icon {
-  font-size: 1.1rem;
+  stroke: currentColor;
+  opacity: 0.8;
+}
+
+.nav-item a.active .nav-icon {
+  opacity: 1;
+  stroke: var(--color-accent);
 }
 
 .sidebar-footer {
@@ -94,15 +91,10 @@
   border-top: 1px solid var(--color-border);
 }
 
-.footer-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: var(--radius-sm);
-  background-color: var(--color-bg-input);
-  border: 1px solid var(--color-border);
+.version-label {
   font-size: 0.75rem;
-  font-family: var(--font-mono);
   color: var(--color-text-muted);
+  font-family: var(--font-mono);
 }
 
 .main-content {
@@ -114,10 +106,10 @@
   background-color: var(--color-bg-primary);
 }
 
-/* Custom Scrollbar */
+/* Custom Minimalist Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -125,10 +117,10 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: var(--radius-sm);
+  background: #333333;
+  border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-border-hover);
+  background: #555555;
 }

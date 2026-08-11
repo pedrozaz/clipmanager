@@ -26,9 +26,9 @@ export async function renderClipDetailPage(container, clipId) {
 
     container.innerHTML = `
       <div class="clip-detail-header">
-        <a href="#/library" class="btn btn-secondary btn-back">⬅️ Voltar à Biblioteca</a>
+        <a href="#/library" class="btn btn-secondary btn-back">Voltar à Biblioteca</a>
         <div class="header-actions">
-          <button id="delete-clip-btn" class="btn btn-danger">🗑️ Excluir Clipe</button>
+          <button id="delete-clip-btn" class="btn btn-danger">Excluir Clipe</button>
         </div>
       </div>
 
@@ -42,64 +42,64 @@ export async function renderClipDetailPage(container, clipId) {
             <div class="detail-status-row">
               <label for="status-select">Status do Clipe:</label>
               <select id="status-select" class="status-select-dropdown">
-                <option value="novo" ${clip.status === "novo" ? "selected" : ""}>🔵 Novo</option>
-                <option value="editando" ${clip.status === "editando" ? "selected" : ""}>🟡 Editando</option>
-                <option value="editado" ${clip.status === "editado" ? "selected" : ""}>🟣 Editado</option>
-                <option value="postado" ${clip.status === "postado" ? "selected" : ""}>🟢 Postado</option>
-                <option value="descartado" ${clip.status === "descartado" ? "selected" : ""}>⚪ Descartado</option>
+                <option value="novo" ${clip.status === "novo" ? "selected" : ""}>Novo</option>
+                <option value="editando" ${clip.status === "editando" ? "selected" : ""}>Editando</option>
+                <option value="editado" ${clip.status === "editado" ? "selected" : ""}>Editado</option>
+                <option value="postado" ${clip.status === "postado" ? "selected" : ""}>Postado</option>
+                <option value="descartado" ${clip.status === "descartado" ? "selected" : ""}>Descartado</option>
               </select>
             </div>
 
             <div class="detail-section">
-              <h3>🔗 Links das Redes</h3>
+              <h3>Links das Redes</h3>
               <div class="links-grid">
                 <div class="link-item">
-                  <label>🟣 Twitch URL</label>
+                  <label>Twitch URL</label>
                   <div class="link-input-group">
                     <input type="text" id="twitch-url-input" value="${clip.twitch_url || ""}" placeholder="https://clips.twitch.tv/..." />
-                    <button class="btn-icon copy-btn" data-target="twitch-url-input">📋 Copiar</button>
+                    <button class="btn-icon copy-btn" data-target="twitch-url-input">Copiar</button>
                   </div>
                 </div>
                 <div class="link-item">
-                  <label>🔴 YouTube URL</label>
+                  <label>YouTube URL</label>
                   <div class="link-input-group">
                     <input type="text" id="youtube-url-input" value="${clip.youtube_url || ""}" placeholder="https://youtube.com/shorts/..." />
-                    <button class="btn-icon copy-btn" data-target="youtube-url-input">📋 Copiar</button>
+                    <button class="btn-icon copy-btn" data-target="youtube-url-input">Copiar</button>
                   </div>
                 </div>
                 <div class="link-item">
-                  <label>📸 Instagram URL</label>
+                  <label>Instagram URL</label>
                   <div class="link-input-group">
                     <input type="text" id="insta-url-input" value="${clip.instagram_url || ""}" placeholder="https://instagram.com/reel/..." />
-                    <button class="btn-icon copy-btn" data-target="insta-url-input">📋 Copiar</button>
+                    <button class="btn-icon copy-btn" data-target="insta-url-input">Copiar</button>
                   </div>
                 </div>
               </div>
             </div>
 
             <div class="detail-section">
-              <h3>📝 Anotações <span id="auto-save-indicator" class="save-indicator"></span></h3>
+              <h3>Anotações <span id="auto-save-indicator" class="save-indicator"></span></h3>
               <textarea id="clip-notes-edit" rows="5" placeholder="Adicione notas, ideias de edição, hashtags...">${clip.notes || ""}</textarea>
             </div>
           </div>
 
           <div class="detail-card">
             <div class="card-header-flex">
-              <h3>📊 Analytics (YouTube)</h3>
-              ${clip.youtube_url ? `<button id="fetch-analytics-btn" class="btn btn-secondary">🔄 Sincronizar YouTube</button>` : ''}
+              <h3>Analytics (YouTube)</h3>
+              ${clip.youtube_url ? `<button id="fetch-analytics-btn" class="btn btn-secondary">Sincronizar YouTube</button>` : ''}
             </div>
             ${latestAnalytics ? `
               <div class="analytics-metrics-grid">
                 <div class="metric-card">
-                  <span class="metric-value">👀 ${latestAnalytics.views.toLocaleString()}</span>
+                  <span class="metric-value">${latestAnalytics.views.toLocaleString()}</span>
                   <span class="metric-label">Visualizações</span>
                 </div>
                 <div class="metric-card">
-                  <span class="metric-value">👍 ${latestAnalytics.likes.toLocaleString()}</span>
+                  <span class="metric-value">${latestAnalytics.likes.toLocaleString()}</span>
                   <span class="metric-label">Likes</span>
                 </div>
                 <div class="metric-card">
-                  <span class="metric-value">💬 ${latestAnalytics.comments.toLocaleString()}</span>
+                  <span class="metric-value">${latestAnalytics.comments.toLocaleString()}</span>
                   <span class="metric-label">Comentários</span>
                 </div>
               </div>
@@ -116,7 +116,7 @@ export async function renderClipDetailPage(container, clipId) {
 
         <div class="detail-sidebar-column">
           <div class="detail-card">
-            <h3>🏷️ Categorias</h3>
+            <h3>Categorias</h3>
             <div id="assigned-categories-container" class="assigned-categories-list">
               ${renderAssignedCategories(assignedCategories)}
             </div>
@@ -134,19 +134,19 @@ export async function renderClipDetailPage(container, clipId) {
 
           <div class="detail-card">
             <div class="card-header-flex">
-              <h3>🎮 Partida de Valorant</h3>
-              <button id="link-match-btn" class="btn btn-secondary">${matchData ? '🔄 Alterar' : '🔗 Vincular'}</button>
+              <h3>Partida de Valorant</h3>
+              <button id="link-match-btn" class="btn btn-secondary">${matchData ? 'Alterar' : 'Vincular'}</button>
             </div>
             ${matchData ? `
               <div class="match-data-badge ${matchData.result === 'Vitória' ? 'match-win' : 'match-loss'}">
                 <div class="match-badge-header">
-                  <strong>🗺️ ${matchData.map}</strong> — <span class="badge-tag">${matchData.result} (${matchData.score})</span>
+                  <strong>${matchData.map}</strong> — <span class="badge-tag">${matchData.result} (${matchData.score})</span>
                 </div>
                 <div class="match-badge-details">
-                  <span>👤 Agente: <strong>${matchData.agent}</strong></span>
-                  <span>⚔️ KDA: <strong>${matchData.kda}</strong></span>
+                  <span>Agente: <strong>${matchData.agent}</strong></span>
+                  <span>KDA: <strong>${matchData.kda}</strong></span>
                 </div>
-                <button id="unlink-match-btn" class="btn-icon" style="margin-top: 8px; color: #ef4444; width: 100%;">❌ Desvincular partida</button>
+                <button id="unlink-match-btn" class="btn-icon" style="margin-top: 8px; color: #ef4444; width: 100%;">Desvincular partida</button>
               </div>
             ` : `
               <div class="placeholder-section">
@@ -156,7 +156,7 @@ export async function renderClipDetailPage(container, clipId) {
           </div>
 
           <div class="detail-card">
-            <h3>ℹ️ Informações</h3>
+            <h3>Informações</h3>
             <ul class="info-list">
               <li><strong>Data do Clipe:</strong> ${clip.clip_date || "Não informada"}</li>
               <li><strong>Criado em:</strong> ${clip.created_at ? clip.created_at.split(" ")[0] : "Hoje"}</li>
@@ -171,7 +171,7 @@ export async function renderClipDetailPage(container, clipId) {
   } catch (err) {
     container.innerHTML = `
       <div class="empty-state">
-        <h3>❌ Clipe não encontrado</h3>
+        <h3>Clipe não encontrado</h3>
         <p>${err}</p>
         <a href="#/library" class="btn btn-secondary">Voltar à Biblioteca</a>
       </div>
@@ -234,10 +234,10 @@ function setupDetailEvents(clip, allCategories) {
           status: statusSelect.value,
           notes: notesTextarea.value.trim() || null,
         });
-        if (indicator) indicator.innerText = "✓ Salvo";
+        if (indicator) indicator.innerText = "Salvo";
         setTimeout(() => { if (indicator) indicator.innerText = ""; }, 2000);
       } catch (err) {
-        if (indicator) indicator.innerText = "❌ Erro ao salvar";
+        if (indicator) indicator.innerText = "Erro ao salvar";
       }
     }, 600);
   };
@@ -269,7 +269,7 @@ function setupDetailEvents(clip, allCategories) {
       }
 
       openModal({
-        title: "🎮 Selecionar Partida do Valorant",
+        title: "Selecionar Partida do Valorant",
         confirmText: "Vincular Partida",
         contentHtml: `
           <div class="form-group">
@@ -368,7 +368,7 @@ function setupDetailEvents(clip, allCategories) {
 
   deleteBtn?.addEventListener("click", () => {
     openModal({
-      title: "🗑️ Excluir Clipe",
+      title: "Excluir Clipe",
       confirmText: "Sim, Excluir",
       contentHtml: `<p>Tem certeza que deseja excluir o clipe <strong>"${clip.title}"</strong>? Esta ação não pode ser desfeita.</p>`,
       onConfirm: async () => {

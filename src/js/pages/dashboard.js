@@ -6,36 +6,32 @@ export async function renderDashboardPage(container) {
   container.innerHTML = `
     <div class="dashboard-header">
       <div class="header-text">
-        <h2>📊 Dashboard de Analytics</h2>
+        <h2>Dashboard de Analytics</h2>
         <p class="muted-text">Visão geral do desempenho dos seus clipes e redes sociais.</p>
       </div>
-      <button id="sync-all-btn" class="btn btn-primary">🔄 Atualizar Todos os Analytics</button>
+      <button id="sync-all-btn" class="btn btn-primary">Atualizar Analytics</button>
     </div>
 
     <div id="dashboard-metrics-row" class="dashboard-metrics-grid">
       <div class="dash-metric-card">
-        <span class="dash-metric-icon">🎬</span>
         <div class="dash-metric-content">
           <span id="stat-total-clips" class="dash-value">--</span>
           <span class="dash-label">Total de Clipes</span>
         </div>
       </div>
       <div class="dash-metric-card">
-        <span class="dash-metric-icon">👀</span>
         <div class="dash-metric-content">
           <span id="stat-total-views" class="dash-value">--</span>
           <span class="dash-label">Visualizações Totais</span>
         </div>
       </div>
       <div class="dash-metric-card">
-        <span class="dash-metric-icon">👍</span>
         <div class="dash-metric-content">
           <span id="stat-avg-likes" class="dash-value">--</span>
           <span class="dash-label">Média de Likes</span>
         </div>
       </div>
       <div class="dash-metric-card">
-        <span class="dash-metric-icon">👑</span>
         <div class="dash-metric-content">
           <span id="stat-top-clip" class="dash-value" style="font-size: 1rem;">--</span>
           <span class="dash-label">Clipe Mais Visto</span>
@@ -45,14 +41,14 @@ export async function renderDashboardPage(container) {
 
     <div class="dashboard-charts-grid">
       <div class="dash-chart-card">
-        <h3>🔥 Top Clipes por Visualizações</h3>
+        <h3>Top Clipes por Visualizações</h3>
         <div class="chart-wrapper">
           <canvas id="top-clips-chart"></canvas>
         </div>
       </div>
 
       <div class="dash-chart-card">
-        <h3>📌 Distribuição por Status</h3>
+        <h3>Distribuição por Status</h3>
         <div class="chart-wrapper">
           <canvas id="status-chart"></canvas>
         </div>
@@ -60,7 +56,7 @@ export async function renderDashboardPage(container) {
     </div>
 
     <div class="dash-table-card">
-      <h3>🏆 Ranking dos 5 Clipes Mais Vistos</h3>
+      <h3>Ranking dos 5 Clipes Mais Vistos</h3>
       <div id="top-clips-table-container">
         <p class="muted-text">Carregando dados...</p>
       </div>
@@ -134,10 +130,10 @@ function renderTopClipsTable(topClips) {
           <tr>
             <td><strong>#${index + 1}</strong></td>
             <td>${c.title}</td>
-            <td><strong>👀 ${c.views.toLocaleString()}</strong></td>
-            <td>👍 ${c.likes.toLocaleString()}</td>
+            <td><strong>${c.views.toLocaleString()} views</strong></td>
+            <td>${c.likes.toLocaleString()} likes</td>
             <td><span class="category-tag category-none">${c.status}</span></td>
-            <td><a href="#/clip/${c.id}" class="btn-icon">👁️ Detalhes</a></td>
+            <td><a href="#/clip/${c.id}" class="btn-icon">Detalhes</a></td>
           </tr>
         `).join("")}
       </tbody>

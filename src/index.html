@@ -3,11 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ClipManager — Streamer Studio</title>
-    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <title>ClipManager</title>
     
     <link rel="stylesheet" href="css/reset.css" />
     <link rel="stylesheet" href="css/tokens.css" />
@@ -20,29 +16,26 @@
     <div class="app-shell">
       <aside class="sidebar">
         <div class="brand">
-          <div class="brand-icon">🎬</div>
-          <div class="brand-text">
-            <span class="brand-name">ClipManager</span>
-            <span class="brand-tag">STREAMER STUDIO</span>
-          </div>
+          <span class="brand-logo-mark">CM</span>
+          <span class="brand-name">ClipManager</span>
         </div>
         <nav>
           <ul class="nav-list">
             <li class="nav-item">
               <a href="#/library" class="active">
-                <span class="nav-icon">📚</span>
+                <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                 <span>Biblioteca</span>
               </a>
             </li>
             <li class="nav-item">
               <a href="#/dashboard">
-                <span class="nav-icon">📊</span>
+                <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                 <span>Dashboard</span>
               </a>
             </li>
             <li class="nav-item">
               <a href="#/settings">
-                <span class="nav-icon">⚙️</span>
+                <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 <span>Configurações</span>
               </a>
             </li>
@@ -50,14 +43,14 @@
         </nav>
 
         <div class="sidebar-footer">
-          <div class="footer-badge">v1.0.0 Pro</div>
+          <span class="version-label">v1.0.0</span>
         </div>
       </aside>
 
       <main id="app-container" class="main-content">
         <div class="loading-full-page">
           <div class="spinner"></div>
-          <p>Carregando ClipManager...</p>
+          <p>Carregando...</p>
         </div>
       </main>
     </div>
