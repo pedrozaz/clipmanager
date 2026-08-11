@@ -1070,3 +1070,78 @@ select option, .form-select option, .select option {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* ==========================================================================
+   CLIP DETAIL & CATEGORY GRIDS
+   ========================================================================== */
+.clip-detail-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+/* ==========================================================================
+   MEDIA QUERIES FOR COMPONENT RESPONSIVENESS
+   ========================================================================== */
+
+/* Large Laptops / Screens under 1300px */
+@media (max-width: 1300px) {
+  .dash-kpi-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Standard Laptops & Tablets under 1024px */
+@media (max-width: 1024px) {
+  .dash-body {
+    grid-template-columns: 1fr;
+  }
+  .clip-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+  .filter-bar-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filter-bar-left, .filter-bar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* Small Tablets & Mobile under 768px */
+@media (max-width: 768px) {
+  .dash-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .top-nav-left, .top-nav-right {
+    width: auto;
+  }
+  .global-search-mock {
+    display: none;
+  }
+  .clips-grid, .grid-view {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+  }
+}
+
+/* Ultra Small Screens under 480px */
+@media (max-width: 480px) {
+  .dash-kpi-row {
+    grid-template-columns: 1fr;
+  }
+  .clips-grid, .grid-view {
+    grid-template-columns: 1fr !important;
+  }
+}
+

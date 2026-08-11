@@ -230,3 +230,38 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* RESPONSIVE LAYOUT BREAKPOINTS */
+@media (max-width: 900px) {
+  .sidebar {
+    width: 200px;
+  }
+  .page-container {
+    padding: var(--space-4);
+  }
+}
+
+@media (max-width: 640px) {
+  .app-body {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .sidebar-scroll {
+    display: flex;
+    padding: var(--space-2);
+    overflow-x: auto;
+  }
+  .nav-section {
+    display: flex;
+    margin-bottom: 0;
+    gap: var(--space-2);
+  }
+  .nav-heading {
+    display: none;
+  }
+}
+
