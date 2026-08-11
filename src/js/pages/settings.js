@@ -95,6 +95,17 @@ export async function renderSettingsPage(container) {
           `).join('')}
         </div>
       </div>
+
+      <div class="settings-card settings-card-wide">
+        <h3>💾 Backup e Exportação</h3>
+        <p class="settings-desc">Exporte ou restaure um backup completo do app ou baixe uma planilha em CSV.</p>
+        <div class="button-group" style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <button id="export-json-btn" class="btn btn-secondary">📥 Exportar Backup JSON</button>
+          <button id="export-csv-btn" class="btn btn-secondary">📊 Exportar Clipes (CSV)</button>
+          <button id="import-json-btn" class="btn btn-primary">📤 Restaurar Backup JSON</button>
+          <input type="file" id="import-file-input" accept=".json" style="display: none;" />
+        </div>
+      </div>
     </div>
   `;
 
@@ -229,4 +240,68 @@ function setupSettingsEvents(container) {
       });
     });
   });
+
+  document.getElementById("export-json-btn")?.addEventListener("click", async () => {
+    try {
+      const jsonStr = await api.exportDataJson();
+      downloadFile(jsonStr, "clipmanager_backup.json", "application/json");
+      showToast("Backup JSON exportado com sucesso!", "success");
+    } catch (err) {
+      showToast(`Erro ao exportar: ${err}`, "error");
+    }
+  });
+
+  document.getElementById("export-csv-btn")?.addEventListener("click", async () => {
+    try {
+      const csvStr = await api.exportClipsCsv();
+      downloadFile(csvStr, "clipmanager_clips.csv", "text/csv;charset=utf-8;");
+      showToast("Planilha CSV exportada com sucesso!", "success");
+    } catch (err) {
+      showToast(`Erro ao exportar: ${err}`, "error");
+    }
+  });
+
+  const fileInput = document.getElementById("import-file-input");
+  document.getElementById("import-json-btn")?.addEventListener("click", () => {
+    fileInput?.click();
+  });
+
+  fileInput?.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const jsonContent = evt.target.result;
+      openModal({
+        title: "📤 Restaurar Backup JSON",
+        confirmText: "Sim, Restaurar",
+        contentHtml: `<p>Tem certeza que deseja restaurar o backup a partir de <strong>${file.name}</strong>?</p>`,
+        onConfirm: async () => {
+          try {
+            const res = await api.importDataJson(jsonContent);
+            showToast(`Restauração concluída! ${res.clips_imported} clipes e ${res.categories_imported} categorias.`, "success");
+            renderSettingsPage(container);
+            return true;
+          } catch (err) {
+            showToast(`Erro ao restaurar backup: ${err}`, "error");
+            return false;
+          }
+        }
+      });
+    };
+    reader.readAsText(file);
+  });
+}
+
+function downloadFile(content, fileName, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }

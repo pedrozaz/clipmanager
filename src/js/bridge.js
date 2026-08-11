@@ -56,4 +56,9 @@ export const api = {
   getClipMatchData: (clipId) => invoke("get_clip_match_data", { clipId: Number(clipId) }),
   unlinkMatchFromClip: (clipId) => invoke("unlink_match_from_clip", { clipId: Number(clipId) }),
   testValorantConnection: () => invoke("test_valorant_connection"),
+
+  // Export & Backup
+  exportDataJson: () => invoke("export_data_json"),
+  exportClipsCsv: () => invoke("export_clips_csv"),
+  importDataJson: (jsonStr) => invoke("import_data_json", { jsonStr }),
 };

@@ -58,6 +58,9 @@ pub fn run() {
             commands::valorant::get_clip_match_data,
             commands::valorant::unlink_match_from_clip,
             commands::valorant::test_valorant_connection,
+            commands::export::export_data_json,
+            commands::export::export_clips_csv,
+            commands::export::import_data_json,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
