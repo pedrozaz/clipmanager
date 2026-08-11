@@ -7,6 +7,7 @@ import { showToast } from "../components/toast.js";
 let currentViewMode = "grid";
 let clipsList = [];
 let categoriesList = [];
+let clipCategoriesMap = {};
 
 export async function renderLibraryPage(container) {
   try {
@@ -73,17 +74,30 @@ function setupFilterEvents(container) {
 async function loadAndRenderClips() {
   const searchInput = document.getElementById("search-input");
   const statusFilter = document.getElementById("status-filter");
+  const categoryFilter = document.getElementById("category-filter");
   const sortByFilter = document.getElementById("sort-by-filter");
 
   const params = {
     searchQuery: searchInput?.value.trim() || null,
     filterStatus: statusFilter?.value || null,
+    filterCategoryId: categoryFilter?.value ? Number(categoryFilter.value) : null,
     sortBy: sortByFilter?.value || "created_at",
     sortOrder: "DESC",
   };
 
   try {
     clipsList = await api.listClips(params);
+    clipCategoriesMap = {};
+    await Promise.all(
+      clipsList.map(async (clip) => {
+        try {
+          const cats = await api.getClipCategories(clip.id);
+          clipCategoriesMap[clip.id] = cats;
+        } catch (_) {
+          clipCategoriesMap[clip.id] = [];
+        }
+      })
+    );
     renderClipsDisplay();
   } catch (err) {
     showToast(`Erro ao carregar clipes: ${err}`, "error");
@@ -109,7 +123,7 @@ function renderClipsDisplay() {
   if (currentViewMode === "grid") {
     displayContainer.innerHTML = `
       <div class="clips-grid">
-        ${clipsList.map(clip => renderClipCard(clip, [])).join("")}
+        ${clipsList.map(clip => renderClipCard(clip, clipCategoriesMap[clip.id] || [])).join("")}
       </div>
     `;
   } else {
@@ -126,7 +140,7 @@ function renderClipsDisplay() {
             </tr>
           </thead>
           <tbody>
-            ${clipsList.map(clip => renderClipRow(clip, [])).join("")}
+            ${clipsList.map(clip => renderClipRow(clip, clipCategoriesMap[clip.id] || [])).join("")}
           </tbody>
         </table>
       </div>

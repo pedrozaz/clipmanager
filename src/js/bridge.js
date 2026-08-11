@@ -6,6 +6,7 @@ export const api = {
   getClip: (id) => invoke("get_clip", { id: Number(id) }),
   listClips: (params = {}) => invoke("list_clips", {
     filterStatus: params.filterStatus || null,
+    filterCategoryId: params.filterCategoryId ? Number(params.filterCategoryId) : null,
     searchQuery: params.searchQuery || null,
     sortBy: params.sortBy || null,
     sortOrder: params.sortOrder || null,

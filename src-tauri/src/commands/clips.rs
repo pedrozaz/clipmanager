@@ -69,6 +69,7 @@ fn get_clip_internal(conn: &rusqlite::Connection, id: i64) -> Result<Clip> {
 pub fn list_clips(
     state: State<'_, DbState>,
     filter_status: Option<String>,
+    filter_category_id: Option<i64>,
     search_query: Option<String>,
     sort_by: Option<String>,
     sort_order: Option<String>,
@@ -84,6 +85,11 @@ pub fn list_clips(
     if let Some(ref status) = filter_status {
         sql.push_str(" AND status = ?");
         param_values.push(Box::new(status.clone()));
+    }
+
+    if let Some(cat_id) = filter_category_id {
+        sql.push_str(" AND id IN (SELECT clip_id FROM clip_categories WHERE category_id = ?)");
+        param_values.push(Box::new(cat_id));
     }
 
     if let Some(ref search) = search_query {
