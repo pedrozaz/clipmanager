@@ -4,6 +4,8 @@ Bem-vindo ao **Assuna - Clip Manager**, seu aplicativo de área de trabalho defi
 
 Este guia foi feito pensando em você, streamer e criador de conteúdo. Não é necessário nenhum conhecimento técnico para usar o aplicativo.
 
+> **🐧 Usuários Linux:** Você pode preparar todo o ambiente de forma automática executando o script `./scripts/install-deps-linux.sh`.
+
 ---
 
 ## 🚀 1. Primeiro Acesso e Configuração Rápida

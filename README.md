@@ -37,10 +37,12 @@
 
 ## 🚀 Como Executar o Projeto
 
-### Pré-requisitos
-- [Node.js](https://nodejs.org) (v18+) e [pnpm](https://pnpm.io)
-- [Rust & Cargo](https://rustup.rs) (Edition 2024)
-- Dependências de sistema do Tauri 2.x para Linux/Windows
+### 💡 Instalação Automática de Dependências no Linux
+Se estiver utilizando Ubuntu, Debian, Pop!_OS, Mint, Fedora, Arch Linux ou openSUSE, você pode instalar todas as dependências de sistema do Tauri 2.x, Rust e pnpm de forma automatizada rodando:
+```bash
+chmod +x ./scripts/install-deps-linux.sh
+./scripts/install-deps-linux.sh
+```
 
 ### 1. Clonar o repositório
 ```bash
