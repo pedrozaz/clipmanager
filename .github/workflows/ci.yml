@@ -17,7 +17,7 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy, dependencies
+          components: clippy, rustfmt
 
       - name: Install Tauri dependencies
         run: |
