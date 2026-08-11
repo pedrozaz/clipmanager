@@ -51,12 +51,22 @@ export async function renderDashboard(container) {
       </div>
 
       <div class="dash-side">
-        <div class="section-card" style="padding: var(--space-5);">
+        <div class="section-card" style="padding: var(--space-5); margin-bottom: var(--space-5);">
           <h3 style="margin-bottom: var(--space-4); font-size: 15px;">Status dos Clipes</h3>
           <div style="position:relative; height:220px; width:100%;">
             <canvas id="status-chart"></canvas>
           </div>
           <div id="status-legend" style="margin-top: var(--space-4);"></div>
+        </div>
+
+        <div class="section-card" style="padding: var(--space-5);">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: var(--space-4);">
+            <h3 style="margin:0; font-size: 15px;">Desempenho no Valorant</h3>
+            <span style="font-size:11px; color:var(--text-muted);">clipes vinculados</span>
+          </div>
+          <div id="val-stats-container">
+            <p class="text-muted text-sm">Carregando estatísticas do Valorant...</p>
+          </div>
         </div>
       </div>
     </div>
@@ -207,6 +217,56 @@ async function loadDashboardData() {
         <span style="font-size:13px; font-weight:600; color:var(--text-primary);">${data[i]}</span>
       </div>
     `).join('');
+
+    // Valorant stats
+    const valStatsEl = document.getElementById('val-stats-container');
+    if (valStatsEl) {
+      try {
+        const valStats = await api.getValorantStats();
+        if (valStats && valStats.total_matches > 0) {
+          const wrColor = valStats.win_rate >= 50 ? '#34d399' : '#f87171';
+          valStatsEl.innerHTML = `
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+              <div style="background: var(--bg-surface); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); text-align:center;">
+                <div style="font-size:11px; color:var(--text-muted);">Taxa de Vitória</div>
+                <div style="font-size:18px; font-weight:700; color:${wrColor};">${valStats.win_rate.toFixed(1)}%</div>
+                <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">${valStats.wins}V / ${valStats.losses}D</div>
+              </div>
+              <div style="background: var(--bg-surface); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); text-align:center;">
+                <div style="font-size:11px; color:var(--text-muted);">K/D Ratio</div>
+                <div style="font-size:18px; font-weight:700; color:var(--text-primary);">${valStats.kd_ratio.toFixed(2)}</div>
+                <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">${valStats.total_matches} partidas</div>
+              </div>
+            </div>
+
+            <div style="background: var(--bg-surface); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom: 6px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 6px;">
+                <span style="font-size:12px; color:var(--text-muted);">Abates (Kills):</span>
+                <strong style="font-size:13px; color:var(--text-primary);">${valStats.kills.toLocaleString('pt-BR')}</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom: 6px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 6px;">
+                <span style="font-size:12px; color:var(--text-muted);">Mortes (Deaths):</span>
+                <strong style="font-size:13px; color:var(--text-primary);">${valStats.deaths.toLocaleString('pt-BR')}</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom: 6px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 6px;">
+                <span style="font-size:12px; color:var(--text-muted);">Assistências:</span>
+                <strong style="font-size:13px; color:var(--text-primary);">${valStats.assists.toLocaleString('pt-BR')}</strong>
+              </div>
+              ${valStats.most_played_agent ? `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span style="font-size:12px; color:var(--text-muted);">Agente Favorito:</span>
+                  <strong style="font-size:13px; color:var(--accent-secondary);">${valStats.most_played_agent}</strong>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        } else {
+          valStatsEl.innerHTML = `<p class="text-muted text-sm" style="margin:0;">Vincule partidas do Valorant aos seus clipes na biblioteca para ver a somatória de K/D, abates e taxa de vitória aqui.</p>`;
+        }
+      } catch(e) {
+        valStatsEl.innerHTML = `<p class="text-muted text-sm" style="margin:0;">Sem estatísticas de partidas.</p>`;
+      }
+    }
 
     // Top clips by Twitch views
     const allClips = await api.listClips({ sortBy: 'views', sortOrder: 'desc' });

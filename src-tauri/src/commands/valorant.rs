@@ -3,6 +3,7 @@ use crate::api::henrik::{HenrikClient, ValorantMatchInfo};
 use crate::db::models::MatchData;
 use crate::errors::{AppError, Result};
 use rusqlite::params;
+use serde::{Deserialize, Serialize};
 use tauri::State;
 
 #[tauri::command]
@@ -221,10 +222,105 @@ pub async fn test_valorant_connection(state: State<'_, DbState>) -> Result<Strin
                 .to_string(),
         )
     } else {
-        let first = &matches[0];
         Ok(format!(
-            "Conexão bem-sucedida! Última partida: Mapa {} com {} ({}) - Placar {}",
-            first.map, first.agent, first.result, first.score
+            "Conexão com a Henrik API efetuada com sucesso! Encontradas {} partidas recentes.",
+            matches.len()
         ))
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ValorantStats {
+    pub total_matches: i64,
+    pub wins: i64,
+    pub losses: i64,
+    pub win_rate: f64,
+    pub kills: i64,
+    pub deaths: i64,
+    pub assists: i64,
+    pub kd_ratio: f64,
+    pub most_played_agent: Option<String>,
+}
+
+#[tauri::command]
+pub fn get_valorant_stats(state: State<'_, DbState>) -> Result<ValorantStats> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| AppError::Database(e.to_string()))?;
+
+    let mut stmt = conn.prepare("SELECT kda, result, agent FROM match_data")?;
+    let rows = stmt.query_map([], |row| {
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, String>(1)?,
+            row.get::<_, String>(2)?,
+        ))
+    })?;
+
+    let mut total_matches = 0i64;
+    let mut wins = 0i64;
+    let mut losses = 0i64;
+    let mut kills = 0i64;
+    let mut deaths = 0i64;
+    let mut assists = 0i64;
+    let mut agent_counts: std::collections::HashMap<String, i64> = std::collections::HashMap::new();
+
+    for r in rows.flatten() {
+        let (kda_str, res_str, agent) = r;
+        total_matches += 1;
+
+        let res_lower = res_str.to_lowercase();
+        if res_lower.contains("vitória") || res_lower.contains("win") {
+            wins += 1;
+        } else {
+            losses += 1;
+        }
+
+        let parts: Vec<&str> = kda_str.split('/').collect();
+        if parts.len() == 3 {
+            if let Ok(k) = parts[0].trim().parse::<i64>() {
+                kills += k;
+            }
+            if let Ok(d) = parts[1].trim().parse::<i64>() {
+                deaths += d;
+            }
+            if let Ok(a) = parts[2].trim().parse::<i64>() {
+                assists += a;
+            }
+        }
+
+        if !agent.trim().is_empty() {
+            *agent_counts.entry(agent.trim().to_string()).or_insert(0) += 1;
+        }
+    }
+
+    let win_rate = if total_matches > 0 {
+        (wins as f64 / total_matches as f64) * 100.0
+    } else {
+        0.0
+    };
+
+    let kd_ratio = if deaths > 0 {
+        kills as f64 / deaths as f64
+    } else {
+        kills as f64
+    };
+
+    let most_played_agent = agent_counts
+        .into_iter()
+        .max_by_key(|(_, count)| *count)
+        .map(|(agent, _)| agent);
+
+    Ok(ValorantStats {
+        total_matches,
+        wins,
+        losses,
+        win_rate,
+        kills,
+        deaths,
+        assists,
+        kd_ratio,
+        most_played_agent,
+    })
 }
