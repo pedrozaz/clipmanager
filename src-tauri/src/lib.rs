@@ -46,6 +46,10 @@ pub fn run() {
             commands::settings::list_settings,
             commands::import::import_twitch_clips,
             commands::import::test_twitch_connection,
+            commands::analytics::fetch_youtube_analytics,
+            commands::analytics::fetch_all_analytics,
+            commands::analytics::get_analytics_history,
+            commands::analytics::test_youtube_connection,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

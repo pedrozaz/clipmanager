@@ -11,6 +11,13 @@ export async function renderClipDetailPage(container, clipId) {
     const clip = await api.getClip(clipId);
     const assignedCategories = await api.getClipCategories(clipId);
     const allCategories = await api.listCategories();
+    let analyticsHistory = [];
+
+    try {
+      analyticsHistory = await api.getAnalyticsHistory(clipId);
+    } catch (_) {}
+
+    const latestAnalytics = analyticsHistory.length > 0 ? analyticsHistory[analyticsHistory.length - 1] : null;
 
     container.innerHTML = `
       <div class="clip-detail-header">
@@ -72,10 +79,33 @@ export async function renderClipDetailPage(container, clipId) {
           </div>
 
           <div class="detail-card">
-            <h3>📊 Analytics (YouTube)</h3>
-            <div class="placeholder-section">
-              <p>Os dados de views, likes e retenção serão carregados no <strong>Marco 7</strong>.</p>
+            <div class="card-header-flex">
+              <h3>📊 Analytics (YouTube)</h3>
+              ${clip.youtube_url ? `<button id="fetch-analytics-btn" class="btn btn-secondary">🔄 Sincronizar YouTube</button>` : ''}
             </div>
+            ${latestAnalytics ? `
+              <div class="analytics-metrics-grid">
+                <div class="metric-card">
+                  <span class="metric-value">👀 ${latestAnalytics.views.toLocaleString()}</span>
+                  <span class="metric-label">Visualizações</span>
+                </div>
+                <div class="metric-card">
+                  <span class="metric-value">👍 ${latestAnalytics.likes.toLocaleString()}</span>
+                  <span class="metric-label">Likes</span>
+                </div>
+                <div class="metric-card">
+                  <span class="metric-value">💬 ${latestAnalytics.comments.toLocaleString()}</span>
+                  <span class="metric-label">Comentários</span>
+                </div>
+              </div>
+              <p class="muted-text" style="font-size: 0.75rem; margin-top: 8px;">
+                Última consulta: ${latestAnalytics.fetched_at}
+              </p>
+            ` : `
+              <div class="placeholder-section">
+                <p>${clip.youtube_url ? 'Nenhuma métrica coletada ainda. Clique em "Sincronizar YouTube".' : 'Cole a URL do vídeo/Shorts do YouTube acima para coletar métricas de engajamento.'}</p>
+              </div>
+            `}
           </div>
         </div>
 
@@ -150,6 +180,7 @@ function setupDetailEvents(clip, allCategories) {
   const youtubeInput = document.getElementById("youtube-url-input");
   const instaInput = document.getElementById("insta-url-input");
   const addCategorySelect = document.getElementById("add-category-select");
+  const fetchAnalyticsBtn = document.getElementById("fetch-analytics-btn");
   const deleteBtn = document.getElementById("delete-clip-btn");
 
   statusSelect?.addEventListener("change", async (e) => {
@@ -193,6 +224,17 @@ function setupDetailEvents(clip, allCategories) {
   twitchInput?.addEventListener("input", triggerAutoSave);
   youtubeInput?.addEventListener("input", triggerAutoSave);
   instaInput?.addEventListener("input", triggerAutoSave);
+
+  fetchAnalyticsBtn?.addEventListener("click", async () => {
+    showToast("Buscando métricas na API do YouTube...", "info");
+    try {
+      await api.fetchYoutubeAnalytics(clip.id);
+      showToast("Métricas do YouTube atualizadas!", "success");
+      renderClipDetailPage(document.getElementById("app-container"), clip.id);
+    } catch (err) {
+      showToast(`Erro ao sincronizar YouTube: ${err}`, "error");
+    }
+  });
 
   document.querySelectorAll(".copy-btn").forEach(btn => {
     btn.addEventListener("click", () => {

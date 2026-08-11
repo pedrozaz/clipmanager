@@ -1,3 +1,4 @@
+pub mod analytics;
 pub mod categories;
 pub mod clips;
 pub mod import;

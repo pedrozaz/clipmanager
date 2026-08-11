@@ -48,7 +48,10 @@ export async function renderSettingsPage(container) {
           <label for="setting-youtube-api-key">YouTube Data API Key v3</label>
           <input type="password" id="setting-youtube-api-key" value="${settingsMap['youtube_api_key'] || ''}" placeholder="Ex: AIzaSy..." />
         </div>
-        <button id="save-youtube-btn" class="btn btn-primary">Salvar Chave YouTube</button>
+        <div class="button-group" style="display: flex; gap: 8px;">
+          <button id="save-youtube-btn" class="btn btn-primary">Salvar Chave YouTube</button>
+          <button id="test-youtube-btn" class="btn btn-secondary">⚡ Testar Conexão</button>
+        </div>
       </div>
 
       <div class="settings-card">
@@ -128,6 +131,16 @@ function setupSettingsEvents(container) {
       showToast("Chave da API do YouTube salva!", "success");
     } catch (err) {
       showToast(`Erro ao salvar: ${err}`, "error");
+    }
+  });
+
+  document.getElementById("test-youtube-btn")?.addEventListener("click", async () => {
+    showToast("Testando conexão com a API do YouTube...", "info");
+    try {
+      const res = await api.testYoutubeConnection();
+      showToast(res, "success");
+    } catch (err) {
+      showToast(`Falha na conexão: ${err}`, "error");
     }
   });
 
