@@ -108,7 +108,7 @@ pub fn export_data_json(state: State<'_, DbState>) -> Result<String> {
         })?
         .collect::<std::result::Result<Vec<_>, _>>()?;
 
-    let mut stmt_set = conn.prepare("SELECT key, value FROM settings")?;
+    let mut stmt_set = conn.prepare("SELECT key, value FROM settings WHERE key NOT IN ('twitch_client_secret', 'youtube_api_key', 'valorant_api_key')")?;
     let settings = stmt_set
         .query_map([], |row| {
             Ok(Setting {
