@@ -7,14 +7,14 @@ use tauri::State;
 
 #[tauri::command]
 pub async fn fetch_recent_matches(state: State<'_, DbState>) -> Result<Vec<ValorantMatchInfo>> {
-    let (riot_id, region) = {
+    let (riot_id, region, api_key) = {
         let conn = state
             .db
             .lock()
             .map_err(|e| AppError::Database(e.to_string()))?;
 
         let mut stmt = conn.prepare(
-            "SELECT key, value FROM settings WHERE key IN ('riot_id', 'valorant_region')",
+            "SELECT key, value FROM settings WHERE key IN ('riot_id', 'valorant_region', 'valorant_api_key')",
         )?;
         let rows = stmt.query_map([], |row| {
             Ok((row.get::<_, String>(0)?, row.get::<_, Option<String>>(1)?))
@@ -22,11 +22,13 @@ pub async fn fetch_recent_matches(state: State<'_, DbState>) -> Result<Vec<Valor
 
         let mut rid = None;
         let mut reg = None;
+        let mut key = None;
 
         for (k, v) in rows.flatten() {
             match k.as_str() {
                 "riot_id" => rid = v,
                 "valorant_region" => reg = v,
+                "valorant_api_key" => key = v,
                 _ => {}
             }
         }
@@ -36,6 +38,7 @@ pub async fn fetch_recent_matches(state: State<'_, DbState>) -> Result<Vec<Valor
                 AppError::NotFound("Riot ID não configurado nas Configurações.".to_string())
             })?,
             reg.unwrap_or_else(|| "br".to_string()),
+            key,
         )
     };
 
@@ -46,7 +49,7 @@ pub async fn fetch_recent_matches(state: State<'_, DbState>) -> Result<Vec<Valor
         ));
     }
 
-    let client = HenrikClient::new();
+    let client = HenrikClient::new(api_key);
     client.get_recent_matches(&region, parts[0], parts[1]).await
 }
 

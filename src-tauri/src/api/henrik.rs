@@ -66,18 +66,14 @@ struct HenrikTeam {
 }
 
 pub struct HenrikClient {
+    api_key: Option<String>,
     http: Client,
 }
 
-impl Default for HenrikClient {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl HenrikClient {
-    pub fn new() -> Self {
+    pub fn new(api_key: Option<String>) -> Self {
         Self {
+            api_key,
             http: Client::new(),
         }
     }
@@ -95,7 +91,12 @@ impl HenrikClient {
             tag.trim()
         );
 
-        let res = self.http.get(&url).send().await?;
+        let mut req = self.http.get(&url);
+        if let Some(key) = self.api_key.as_ref().filter(|k| !k.trim().is_empty()) {
+            req = req.header("Authorization", key.trim());
+        }
+
+        let res = req.send().await?;
 
         if !res.status().is_success() {
             let err_text = res.text().await.unwrap_or_default();

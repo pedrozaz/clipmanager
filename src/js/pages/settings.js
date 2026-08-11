@@ -72,6 +72,13 @@ export async function renderSettingsPage(container) {
             <option value="kr" ${settingsMap['valorant_region'] === 'kr' ? 'selected' : ''}>Coréia (kr)</option>
           </select>
         </div>
+        <div class="form-group">
+          <label for="setting-valorant-api-key">API Key HenrikDev (Gratuita)</label>
+          <input type="password" id="setting-valorant-api-key" value="${settingsMap['valorant_api_key'] || ''}" placeholder="Ex: HKEY-..." />
+          <span style="font-size: 0.75rem; color: var(--color-text-secondary); margin-top: 2px;">
+            Obtenha uma chave gratuita em <a href="https://api.henrikdev.xyz" target="_blank" style="color: var(--color-accent); text-decoration: underline;">api.henrikdev.xyz</a>
+          </span>
+        </div>
         <div class="button-group" style="display: flex; gap: 8px;">
           <button id="save-valorant-btn" class="btn btn-primary">Salvar Dados Valorant</button>
           <button id="test-valorant-btn" class="btn btn-secondary">⚡ Testar Conexão</button>
@@ -161,10 +168,12 @@ function setupSettingsEvents(container) {
   document.getElementById("save-valorant-btn")?.addEventListener("click", async () => {
     const riotId = document.getElementById("setting-riot-id").value.trim();
     const region = document.getElementById("setting-valorant-region").value;
+    const apiKey = document.getElementById("setting-valorant-api-key").value.trim();
 
     try {
       await api.setSetting("riot_id", riotId);
       await api.setSetting("valorant_region", region);
+      await api.setSetting("valorant_api_key", apiKey);
       showToast("Configurações do Valorant salvas!", "success");
     } catch (err) {
       showToast(`Erro ao salvar: ${err}`, "error");
