@@ -10,9 +10,10 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "clipmanager",
-        "width": 800,
-        "height": 600
+        "title": "ClipManager - Organizador de Clipes",
+        "width": 1280,
+        "height": 800,
+        "resizable": true
       }
     ],
     "security": {
