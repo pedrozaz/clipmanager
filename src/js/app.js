@@ -1,22 +1,16 @@
 import { renderLibraryPage } from "./pages/library.js";
+import { renderClipDetailPage } from "./pages/clip-detail.js";
+import { renderSettingsPage } from "./pages/settings.js";
 
 const routes = {
   "/library": renderLibraryPage,
+  "/settings": renderSettingsPage,
   "/dashboard": (container) => {
     container.innerHTML = `
       <div class="empty-state">
         <span class="empty-icon">📊</span>
         <h3>Dashboard de Analytics</h3>
         <p>Em breve no Marco 8!</p>
-      </div>
-    `;
-  },
-  "/settings": (container) => {
-    container.innerHTML = `
-      <div class="empty-state">
-        <span class="empty-icon">⚙️</span>
-        <h3>Configurações</h3>
-        <p>Em breve no Marco 5!</p>
       </div>
     `;
   },
@@ -27,6 +21,14 @@ function handleRoute() {
   if (!container) return;
 
   const hash = window.location.hash.replace("#", "") || "/library";
+
+  if (hash.startsWith("/clip/")) {
+    const clipId = hash.split("/clip/")[1];
+    renderClipDetailPage(container, clipId);
+    document.querySelectorAll(".nav-item a").forEach((link) => link.classList.remove("active"));
+    return;
+  }
+
   const routeHandler = routes[hash] || renderLibraryPage;
 
   document.querySelectorAll(".nav-item a").forEach((link) => {

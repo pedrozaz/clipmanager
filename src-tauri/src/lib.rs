@@ -40,6 +40,9 @@ pub fn run() {
             commands::categories::add_category_to_clip,
             commands::categories::remove_category_from_clip,
             commands::categories::get_clip_categories,
+            commands::settings::get_setting,
+            commands::settings::set_setting,
+            commands::settings::list_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
