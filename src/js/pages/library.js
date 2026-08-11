@@ -145,12 +145,33 @@ function renderClipsDisplay(filteredClips) {
   // Setup click handlers for navigating to detail
   container.querySelectorAll('.clip-item-link').forEach(el => {
     el.addEventListener('click', (e) => {
-      // Handled by router in main app if we use href, or we dispatch an event
+      // Don't navigate if delete button was clicked
+      if (e.target.closest('.card-delete-btn')) return;
       const id = el.getAttribute('data-id');
       window.location.hash = '#/clip/' + id;
     });
   });
-}
+
+  // Quick-delete handlers
+  container.querySelectorAll('.card-delete-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = btn.getAttribute('data-id');
+      const clip = clips.find(c => String(c.id) === String(id));
+      const name = clip ? `"${clip.title}"` : 'este clipe';
+      if (confirm(`Excluir ${name}?`)) {
+        try {
+          await api.deleteClip(id);
+          showToast('Clipe excluído', 'success');
+          await loadClips();
+        } catch(err) {
+          const msg = typeof err === 'string' ? err : (err?.message || JSON.stringify(err));
+          showToast('Erro ao excluir: ' + msg, 'error');
+        }
+      }
+    });
+  });
+} // end renderClipsDisplay
 
 function handleImportTwitch() {
   showModal({

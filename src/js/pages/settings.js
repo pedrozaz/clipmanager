@@ -259,7 +259,7 @@ async function loadSettingsData() {
 async function loadCategories() {
   const container = document.getElementById('categories-grid');
   try {
-    const categories = await api.getCategories();
+    const categories = await api.listCategories();
     if (categories.length === 0) {
       container.innerHTML = '<p class="text-muted">Nenhuma categoria cadastrada</p>';
       return;

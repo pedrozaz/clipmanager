@@ -57,17 +57,17 @@ export async function renderClipDetail(container, clipId) {
           <div class="form-group">
             <label>URL Original (Twitch)</label>
             <div class="d-flex gap-2">
-              <input type="text" class="form-input" value="${currentClip.original_url || ''}" readonly>
-              <a href="${currentClip.original_url}" target="_blank" class="btn btn-secondary">Abrir</a>
-              <button class="btn btn-secondary copy-btn" data-val="${currentClip.original_url}">Copiar</button>
+              <input type="text" class="form-input" value="${currentClip.twitch_url || ''}" readonly>
+              ${currentClip.twitch_url ? `<a href="${currentClip.twitch_url}" target="_blank" class="btn btn-secondary">Abrir</a>` : ''}
+              ${currentClip.twitch_url ? `<button class="btn btn-secondary copy-btn" data-val="${currentClip.twitch_url}">Copiar</button>` : ''}
             </div>
           </div>
 
           <div class="form-group">
-            <label>Link Shorts/TikTok (Postado)</label>
+            <label>Link YouTube Shorts / TikTok (Postado)</label>
             <div class="d-flex gap-2">
-              <input type="text" id="clip-post-url" class="form-input" value="${currentClip.post_url || ''}">
-              ${currentClip.post_url ? `<a href="${currentClip.post_url}" target="_blank" class="btn btn-secondary">Abrir</a>` : ''}
+              <input type="text" id="clip-youtube-url" class="form-input" value="${currentClip.youtube_url || ''}" placeholder="https://youtube.com/shorts/...">
+              ${currentClip.youtube_url ? `<a href="${currentClip.youtube_url}" target="_blank" class="btn btn-secondary">Abrir</a>` : ''}
             </div>
           </div>
 
@@ -149,21 +149,27 @@ function setupEventListeners(clipId) {
   const saveChanges = async () => {
     try {
       await api.updateClip({
-        id: clipId,
+        id: Number(clipId),
         title: document.getElementById('clip-title').value,
         status: document.getElementById('clip-status').value,
-        post_url: document.getElementById('clip-post-url').value,
-        notes: document.getElementById('clip-notes').value
+        youtubeUrl: document.getElementById('clip-youtube-url').value || null,
+        twitchUrl: currentClip.twitch_url || null,
+        instagramUrl: currentClip.instagram_url || null,
+        thumbnailUrl: currentClip.thumbnail_url || null,
+        duration: currentClip.duration || null,
+        clipDate: currentClip.clip_date || null,
+        notes: document.getElementById('clip-notes').value || null,
       });
       // Silent save
     } catch(e) {
-      console.error('Auto-save error:', e);
-      showToast('Erro ao salvar alterações', 'error');
+      const msg = typeof e === 'string' ? e : (e?.message || JSON.stringify(e));
+      console.error('Auto-save error:', msg);
+      showToast('Erro ao salvar: ' + msg, 'error');
     }
   };
 
-  ['clip-title', 'clip-status', 'clip-post-url'].forEach(id => {
-    document.getElementById(id).addEventListener('change', saveChanges);
+  ['clip-title', 'clip-status', 'clip-youtube-url'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', saveChanges);
   });
   
   let typingTimer;

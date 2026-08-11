@@ -27,11 +27,23 @@ export async function renderDashboard(container) {
 
     <div class="dash-body">
       <div class="dash-main">
-        <div class="section-card" style="padding: var(--space-5);">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-4);">
-            <h3 style="margin:0; font-size: 15px;">Top Clipes (Twitch Views)</h3>
+        <div class="section-card" style="padding: var(--space-5); margin-bottom: var(--space-5);">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom: var(--space-4);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9146ff" stroke-width="2"><path d="M21 2H3v16h5v4l4-4h5l4-4V2zm-10 9V7m5 4V7"/></svg>
+            <h3 style="margin:0; font-size: 15px;">Top Clipes — Twitch Views</h3>
           </div>
           <div id="top-clips-list">
+            <p class="text-muted text-sm">Carregando...</p>
+          </div>
+        </div>
+
+        <div class="section-card" style="padding: var(--space-5);">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom: var(--space-4);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#ff4444"><path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.2 2.8 12 2.8 12 2.8s-4.2 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.2v2c0 2.1.3 4.2.3 4.2s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.2 21.6 12 21.6 12 21.6s4.2 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.1.3-4.2v-2C23.3 9.1 23 7 23 7zM9.7 15.5V8.4l8.1 3.6-8.1 3.5z"/></svg>
+            <h3 style="margin:0; font-size: 15px;">Top Clipes — YouTube Shorts</h3>
+            <span style="font-size:11px; color:var(--text-muted); margin-left:auto;">cliques em "Sincronizar YouTube" para atualizar</span>
+          </div>
+          <div id="top-yt-list">
             <p class="text-muted text-sm">Carregando...</p>
           </div>
         </div>
@@ -178,9 +190,8 @@ async function loadDashboardData() {
 
     // Top clips by Twitch views
     const allClips = await api.listClips({ sortBy: 'views', sortOrder: 'desc' });
-    const topClips = (Array.isArray(allClips) ? allClips : [])
-      .filter(c => c.views > 0)
-      .slice(0, 7);
+    const clipsArr = Array.isArray(allClips) ? allClips : [];
+    const topClips = clipsArr.filter(c => c.views > 0).slice(0, 7);
 
     const topEl = document.getElementById('top-clips-list');
     if (topClips.length > 0) {
@@ -199,6 +210,35 @@ async function loadDashboardData() {
       `).join('');
     } else {
       topEl.innerHTML = `<p class="text-muted text-sm">Importe clipes da Twitch para ver estatísticas de visualizações.</p>`;
+    }
+
+    // Top clips by YouTube analytics
+    const ytEl = document.getElementById('top-yt-list');
+    try {
+      const ytTopClips = await api.getTopClips(7);
+      const ytClips = Array.isArray(ytTopClips) ? ytTopClips : [];
+      if (ytClips.length > 0) {
+        const maxYtViews = ytClips[0].views || 1;
+        ytEl.innerHTML = ytClips.map((clip, i) => `
+          <div style="display:flex; align-items:center; gap:12px; padding: 10px 0; ${i < ytClips.length - 1 ? 'border-bottom: 1px solid var(--border-subtle);' : ''}">
+            <span style="font-size:12px; font-weight:700; color:var(--text-muted); width:16px; text-align:center;">${i + 1}</span>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:13px; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${clip.title}</div>
+              <div style="margin-top:4px; height:4px; background:var(--bg-hover); border-radius:2px; overflow:hidden;">
+                <div style="height:100%; width:${Math.round((clip.views / maxYtViews) * 100)}%; background: linear-gradient(90deg, #ff4444, #ff8800); border-radius:2px;"></div>
+              </div>
+            </div>
+            <div style="text-align:right; white-space:nowrap;">
+              <div style="font-size:12px; font-weight:600; color:var(--text-secondary);">${clip.views.toLocaleString('pt-BR')} views</div>
+              ${clip.likes > 0 ? `<div style="font-size:11px; color:var(--text-muted);">♥ ${clip.likes.toLocaleString('pt-BR')}</div>` : ''}
+            </div>
+          </div>
+        `).join('');
+      } else {
+        ytEl.innerHTML = `<p class="text-muted text-sm">Nenhum dado de YouTube ainda. Adicione links de Shorts nos clipes e clique em "Sincronizar YouTube".</p>`;
+      }
+    } catch (_) {
+      ytEl.innerHTML = `<p class="text-muted text-sm">Sincronize para ver métricas do YouTube.</p>`;
     }
 
   } catch (err) {

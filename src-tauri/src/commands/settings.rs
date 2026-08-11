@@ -21,7 +21,7 @@ pub fn get_setting(state: State<'_, DbState>, key: String) -> Result<Option<Stri
 }
 
 #[tauri::command]
-pub fn set_setting(state: State<'_, DbState>, key: String, value: Option<String>) -> Result<()> {
+pub fn set_setting(state: State<'_, DbState>, key: String, value: String) -> Result<()> {
     let conn = state
         .db
         .lock()
