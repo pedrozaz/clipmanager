@@ -1,6 +1,6 @@
+use crate::DbState;
 use crate::db::models::Category;
 use crate::errors::{AppError, Result};
-use crate::DbState;
 use rusqlite::params;
 use tauri::State;
 
@@ -10,7 +10,10 @@ pub fn create_category(
     name: String,
     color: Option<String>,
 ) -> Result<Category> {
-    let conn = state.db.lock().map_err(|e| AppError::Database(e.to_string()))?;
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| AppError::Database(e.to_string()))?;
     let color_val = color.unwrap_or_else(|| "#8b5cf6".to_string());
 
     conn.execute(
@@ -28,7 +31,10 @@ pub fn create_category(
 
 #[tauri::command]
 pub fn list_categories(state: State<'_, DbState>) -> Result<Vec<Category>> {
-    let conn = state.db.lock().map_err(|e| AppError::Database(e.to_string()))?;
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| AppError::Database(e.to_string()))?;
 
     let mut stmt = conn.prepare("SELECT id, name, color FROM categories ORDER BY name ASC")?;
     let categories = stmt
@@ -51,7 +57,10 @@ pub fn update_category(
     name: String,
     color: Option<String>,
 ) -> Result<Category> {
-    let conn = state.db.lock().map_err(|e| AppError::Database(e.to_string()))?;
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| AppError::Database(e.to_string()))?;
     let color_val = color.unwrap_or_else(|| "#8b5cf6".to_string());
 
     let rows = conn.execute(
@@ -60,7 +69,9 @@ pub fn update_category(
     )?;
 
     if rows == 0 {
-        return Err(AppError::NotFound(format!("Category with id {id} not found")));
+        return Err(AppError::NotFound(format!(
+            "Category with id {id} not found"
+        )));
     }
 
     Ok(Category {
@@ -72,11 +83,16 @@ pub fn update_category(
 
 #[tauri::command]
 pub fn delete_category(state: State<'_, DbState>, id: i64) -> Result<()> {
-    let conn = state.db.lock().map_err(|e| AppError::Database(e.to_string()))?;
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| AppError::Database(e.to_string()))?;
 
     let rows = conn.execute("DELETE FROM categories WHERE id = ?1", params![id])?;
     if rows == 0 {
-        return Err(AppError::NotFound(format!("Category with id {id} not found")));
+        return Err(AppError::NotFound(format!(
+            "Category with id {id} not found"
+        )));
     }
 
     Ok(())
@@ -88,7 +104,10 @@ pub fn add_category_to_clip(
     clip_id: i64,
     category_id: i64,
 ) -> Result<()> {
-    let conn = state.db.lock().map_err(|e| AppError::Database(e.to_string()))?;
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| AppError::Database(e.to_string()))?;
 
     conn.execute(
         "INSERT OR IGNORE INTO clip_categories (clip_id, category_id) VALUES (?1, ?2)",
@@ -104,7 +123,10 @@ pub fn remove_category_from_clip(
     clip_id: i64,
     category_id: i64,
 ) -> Result<()> {
-    let conn = state.db.lock().map_err(|e| AppError::Database(e.to_string()))?;
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| AppError::Database(e.to_string()))?;
 
     conn.execute(
         "DELETE FROM clip_categories WHERE clip_id = ?1 AND category_id = ?2",
@@ -116,7 +138,10 @@ pub fn remove_category_from_clip(
 
 #[tauri::command]
 pub fn get_clip_categories(state: State<'_, DbState>, clip_id: i64) -> Result<Vec<Category>> {
-    let conn = state.db.lock().map_err(|e| AppError::Database(e.to_string()))?;
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| AppError::Database(e.to_string()))?;
 
     let mut stmt = conn.prepare(
         "SELECT c.id, c.name, c.color FROM categories c
@@ -145,13 +170,25 @@ mod tests {
     fn test_category_crud_and_clip_association() {
         let conn = init_in_memory_db().unwrap();
 
-        conn.execute("INSERT INTO clips (title, status) VALUES ('Clutch 1v4', 'novo')", []).unwrap();
+        conn.execute(
+            "INSERT INTO clips (title, status) VALUES ('Clutch 1v4', 'novo')",
+            [],
+        )
+        .unwrap();
         let clip_id = conn.last_insert_rowid();
 
-        conn.execute("INSERT INTO categories (name, color) VALUES ('Highlight', '#8b5cf6')", []).unwrap();
+        conn.execute(
+            "INSERT INTO categories (name, color) VALUES ('Highlight', '#8b5cf6')",
+            [],
+        )
+        .unwrap();
         let cat_id = conn.last_insert_rowid();
 
-        conn.execute("INSERT INTO clip_categories (clip_id, category_id) VALUES (?1, ?2)", [clip_id, cat_id]).unwrap();
+        conn.execute(
+            "INSERT INTO clip_categories (clip_id, category_id) VALUES (?1, ?2)",
+            [clip_id, cat_id],
+        )
+        .unwrap();
 
         let mut stmt = conn.prepare(
             "SELECT c.name FROM categories c INNER JOIN clip_categories cc ON c.id = cc.category_id WHERE cc.clip_id = ?1"

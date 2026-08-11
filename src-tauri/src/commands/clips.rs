@@ -1,6 +1,6 @@
+use crate::DbState;
 use crate::db::models::Clip;
 use crate::errors::{AppError, Result};
-use crate::DbState;
 use rusqlite::params;
 use tauri::State;
 
@@ -13,7 +13,10 @@ pub fn create_clip(
     status: Option<String>,
     notes: Option<String>,
 ) -> Result<Clip> {
-    let conn = state.db.lock().map_err(|e| AppError::Database(e.to_string()))?;
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| AppError::Database(e.to_string()))?;
     let status_val = status.unwrap_or_else(|| "novo".to_string());
 
     conn.execute(
@@ -27,7 +30,10 @@ pub fn create_clip(
 
 #[tauri::command]
 pub fn get_clip(state: State<'_, DbState>, id: i64) -> Result<Clip> {
-    let conn = state.db.lock().map_err(|e| AppError::Database(e.to_string()))?;
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| AppError::Database(e.to_string()))?;
     get_clip_internal(&conn, id)
 }
 
@@ -36,23 +42,25 @@ fn get_clip_internal(conn: &rusqlite::Connection, id: i64) -> Result<Clip> {
         "SELECT id, title, twitch_url, youtube_url, instagram_url, thumbnail_url, duration, created_at, clip_date, status, notes, twitch_clip_id, match_id FROM clips WHERE id = ?1"
     )?;
 
-    let clip = stmt.query_row(params![id], |row| {
-        Ok(Clip {
-            id: row.get(0)?,
-            title: row.get(1)?,
-            twitch_url: row.get(2)?,
-            youtube_url: row.get(3)?,
-            instagram_url: row.get(4)?,
-            thumbnail_url: row.get(5)?,
-            duration: row.get(6)?,
-            created_at: row.get(7)?,
-            clip_date: row.get(8)?,
-            status: row.get(9)?,
-            notes: row.get(10)?,
-            twitch_clip_id: row.get(11)?,
-            match_id: row.get(12)?,
+    let clip = stmt
+        .query_row(params![id], |row| {
+            Ok(Clip {
+                id: row.get(0)?,
+                title: row.get(1)?,
+                twitch_url: row.get(2)?,
+                youtube_url: row.get(3)?,
+                instagram_url: row.get(4)?,
+                thumbnail_url: row.get(5)?,
+                duration: row.get(6)?,
+                created_at: row.get(7)?,
+                clip_date: row.get(8)?,
+                status: row.get(9)?,
+                notes: row.get(10)?,
+                twitch_clip_id: row.get(11)?,
+                match_id: row.get(12)?,
+            })
         })
-    }).map_err(|_| AppError::NotFound(format!("Clip with id {id} not found")))?;
+        .map_err(|_| AppError::NotFound(format!("Clip with id {id} not found")))?;
 
     Ok(clip)
 }
@@ -65,7 +73,10 @@ pub fn list_clips(
     sort_by: Option<String>,
     sort_order: Option<String>,
 ) -> Result<Vec<Clip>> {
-    let conn = state.db.lock().map_err(|e| AppError::Database(e.to_string()))?;
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| AppError::Database(e.to_string()))?;
 
     let mut sql = "SELECT id, title, twitch_url, youtube_url, instagram_url, thumbnail_url, duration, created_at, clip_date, status, notes, twitch_clip_id, match_id FROM clips WHERE 1=1".to_string();
     let mut param_values: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
@@ -120,6 +131,7 @@ pub fn list_clips(
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub fn update_clip(
     state: State<'_, DbState>,
     id: i64,
@@ -133,7 +145,10 @@ pub fn update_clip(
     status: String,
     notes: Option<String>,
 ) -> Result<Clip> {
-    let conn = state.db.lock().map_err(|e| AppError::Database(e.to_string()))?;
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| AppError::Database(e.to_string()))?;
 
     let rows = conn.execute(
         "UPDATE clips SET title = ?1, twitch_url = ?2, youtube_url = ?3, instagram_url = ?4, thumbnail_url = ?5, duration = ?6, clip_date = ?7, status = ?8, notes = ?9 WHERE id = ?10",
@@ -149,7 +164,10 @@ pub fn update_clip(
 
 #[tauri::command]
 pub fn update_clip_status(state: State<'_, DbState>, id: i64, new_status: String) -> Result<Clip> {
-    let conn = state.db.lock().map_err(|e| AppError::Database(e.to_string()))?;
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| AppError::Database(e.to_string()))?;
 
     let rows = conn.execute(
         "UPDATE clips SET status = ?1 WHERE id = ?2",
@@ -165,7 +183,10 @@ pub fn update_clip_status(state: State<'_, DbState>, id: i64, new_status: String
 
 #[tauri::command]
 pub fn delete_clip(state: State<'_, DbState>, id: i64) -> Result<()> {
-    let conn = state.db.lock().map_err(|e| AppError::Database(e.to_string()))?;
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| AppError::Database(e.to_string()))?;
 
     let rows = conn.execute("DELETE FROM clips WHERE id = ?1", params![id])?;
 
@@ -187,18 +208,21 @@ mod tests {
         conn.execute(
             "INSERT INTO clips (title, status) VALUES ('Ace Ascent', 'novo')",
             [],
-        ).unwrap();
+        )
+        .unwrap();
         let id = conn.last_insert_rowid();
 
         let clip = super::get_clip_internal(&conn, id).unwrap();
         assert_eq!(clip.title, "Ace Ascent");
         assert_eq!(clip.status, "novo");
 
-        conn.execute("UPDATE clips SET status = 'editado' WHERE id = ?1", [id]).unwrap();
+        conn.execute("UPDATE clips SET status = 'editado' WHERE id = ?1", [id])
+            .unwrap();
         let updated = super::get_clip_internal(&conn, id).unwrap();
         assert_eq!(updated.status, "editado");
 
-        conn.execute("DELETE FROM clips WHERE id = ?1", [id]).unwrap();
+        conn.execute("DELETE FROM clips WHERE id = ?1", [id])
+            .unwrap();
         assert!(super::get_clip_internal(&conn, id).is_err());
     }
 }
