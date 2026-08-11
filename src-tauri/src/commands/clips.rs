@@ -190,9 +190,25 @@ pub fn update_clip(
         .lock()
         .map_err(|e| AppError::Database(e.to_string()))?;
 
+    // Auto-promote to "Postado" when a YouTube URL is linked,
+    // unless the user explicitly set a different terminal status.
+    let has_youtube = youtube_url
+        .as_deref()
+        .map(|u| !u.trim().is_empty())
+        .unwrap_or(false);
+
+    let effective_status = if has_youtube
+        && status != "Postado"
+        && status != "Descartado"
+    {
+        "Postado".to_string()
+    } else {
+        status
+    };
+
     let rows = conn.execute(
         "UPDATE clips SET title = ?1, twitch_url = ?2, youtube_url = ?3, instagram_url = ?4, thumbnail_url = ?5, duration = ?6, clip_date = ?7, status = ?8, notes = ?9 WHERE id = ?10",
-        params![title, twitch_url, youtube_url, instagram_url, thumbnail_url, duration, clip_date, status, notes, id],
+        params![title, twitch_url, youtube_url, instagram_url, thumbnail_url, duration, clip_date, effective_status, notes, id],
     )?;
 
     if rows == 0 {

@@ -148,7 +148,7 @@ function setupEventListeners(clipId) {
   // Auto-save logic
   const saveChanges = async () => {
     try {
-      await api.updateClip({
+      const updated = await api.updateClip({
         id: Number(clipId),
         title: document.getElementById('clip-title').value,
         status: document.getElementById('clip-status').value,
@@ -160,7 +160,15 @@ function setupEventListeners(clipId) {
         clipDate: currentClip.clip_date || null,
         notes: document.getElementById('clip-notes').value || null,
       });
-      // Silent save
+      // If backend auto-promoted status (e.g. youtube_url set → Postado), reflect it in UI
+      if (updated && updated.status) {
+        const sel = document.getElementById('clip-status');
+        if (sel && sel.value !== updated.status) {
+          sel.value = updated.status;
+          currentClip.status = updated.status;
+          showToast(`Status atualizado para "${updated.status}"`, 'info');
+        }
+      }
     } catch(e) {
       const msg = typeof e === 'string' ? e : (e?.message || JSON.stringify(e));
       console.error('Auto-save error:', msg);

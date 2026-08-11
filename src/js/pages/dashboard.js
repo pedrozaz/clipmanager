@@ -146,8 +146,18 @@ async function loadDashboardData() {
       Postado: '#34d399',
       Descartado: '#6b7280',
     };
-    const labels = statusOrder.filter(s => statusCounts.some(sc => sc.status === s));
-    const data = labels.map(s => statusCounts.find(sc => sc.status === s)?.count || 0);
+
+    // Normalize status counts: group case-insensitively into Title Case buckets
+    const normalizedCounts = {};
+    statusCounts.forEach(sc => {
+      const key = sc.status
+        ? sc.status.charAt(0).toUpperCase() + sc.status.slice(1).toLowerCase()
+        : 'Novo';
+      normalizedCounts[key] = (normalizedCounts[key] || 0) + (sc.count || 0);
+    });
+
+    const labels = statusOrder.filter(s => normalizedCounts[s] > 0);
+    const data = labels.map(s => normalizedCounts[s] || 0);
     const colors = labels.map(s => colorMap[s] || '#6b7280');
 
     if (statusChart) statusChart.destroy();

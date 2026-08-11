@@ -79,6 +79,20 @@ pub fn init_db(app_dir: &Path) -> Result<Connection> {
     // Ensure migration for existing DB
     let _ = conn.execute("ALTER TABLE clips ADD COLUMN views INTEGER DEFAULT 0", []);
 
+    // Normalize legacy lowercase statuses to Title Case
+    let _ = conn.execute(
+        "UPDATE clips SET status = CASE status
+            WHEN 'novo'       THEN 'Novo'
+            WHEN 'editando'   THEN 'Editando'
+            WHEN 'editado'    THEN 'Editado'
+            WHEN 'postado'    THEN 'Postado'
+            WHEN 'descartado' THEN 'Descartado'
+            ELSE status
+         END
+         WHERE status = lower(status)",
+        [],
+    );
+
     Ok(conn)
 }
 

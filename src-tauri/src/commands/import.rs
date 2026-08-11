@@ -85,7 +85,7 @@ pub async fn import_twitch_clips(
 
         let res = conn.execute(
             "INSERT INTO clips (title, twitch_url, thumbnail_url, duration, created_at, clip_date, status, twitch_clip_id, views)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'novo', ?7, ?8)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'Novo', ?7, ?8)
              ON CONFLICT(twitch_clip_id) DO UPDATE SET
                 title = excluded.title,
                 thumbnail_url = excluded.thumbnail_url,
