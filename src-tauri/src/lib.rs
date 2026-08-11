@@ -34,6 +34,7 @@ pub fn run() {
             commands::clips::update_clip,
             commands::clips::update_clip_status,
             commands::clips::delete_clip,
+            commands::clips::delete_all_clips,
             commands::categories::create_category,
             commands::categories::list_categories,
             commands::categories::update_category,

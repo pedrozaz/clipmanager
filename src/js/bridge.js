@@ -14,6 +14,7 @@ export const api = {
   updateClip: (clipData) => invoke("update_clip", clipData),
   updateClipStatus: (id, newStatus) => invoke("update_clip_status", { id: Number(id), newStatus }),
   deleteClip: (id) => invoke("delete_clip", { id: Number(id) }),
+  deleteAllClips: () => invoke("delete_all_clips"),
 
   // Categories
   createCategory: (name, color) => invoke("create_category", { name, color }),

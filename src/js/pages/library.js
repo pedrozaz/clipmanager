@@ -16,6 +16,12 @@ export async function renderLibrary(container) {
         <h2>Biblioteca</h2>
         <p class="page-subtitle">Organize e gerencie seus clipes de stream</p>
       </div>
+      <div>
+        <button id="btn-delete-all" class="btn btn-danger btn-sm" title="Apagar todos os clipes">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Apagar Todos
+        </button>
+      </div>
     </div>
     <div id="filter-bar-container"></div>
     <div id="clips-display-container" class="clips-grid mt-4">
@@ -34,6 +40,19 @@ export async function renderLibrary(container) {
     onImportTwitch: handleImportTwitch,
     onNewClip: handleNewClip,
     categories: Object.values(categoriesMap)
+  });
+
+  document.getElementById('btn-delete-all').addEventListener('click', async () => {
+    if (confirm(`Tem certeza que deseja APAGAR todos os ${clips.length} clipes? Esta ação não pode ser desfeita.`)) {
+      try {
+        await api.deleteAllClips();
+        showToast('Todos os clipes foram apagados', 'success');
+        await loadClips();
+      } catch(e) {
+        const msg = typeof e === 'string' ? e : (e?.message || JSON.stringify(e));
+        showToast('Erro ao apagar clipes: ' + msg, 'error');
+      }
+    }
   });
 
   await loadClips();

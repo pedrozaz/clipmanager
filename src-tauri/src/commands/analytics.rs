@@ -190,7 +190,7 @@ pub fn get_dashboard_stats(state: State<'_, DbState>) -> Result<DashboardStats> 
 
     let total_views: i64 = conn
         .query_row(
-            "SELECT COALESCE(SUM(views), 0) FROM (SELECT views FROM analytics GROUP BY clip_id HAVING id = MAX(id))",
+            "SELECT COALESCE(SUM(views), 0) FROM clips",
             [],
             |r| r.get(0),
         )

@@ -1,71 +1,63 @@
 import { api } from '../bridge.js';
-import { createBarChart, createDoughnutChart } from '../components/chart.js';
+import { createDoughnutChart } from '../components/chart.js';
 import { showToast } from '../components/toast.js';
 
-let viewCountChart = null;
 let statusChart = null;
 
 export async function renderDashboard(container) {
   container.innerHTML = `
-    <div class="page-header">
+    <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start;">
       <div>
         <h2>Dashboard</h2>
-        <p class="page-subtitle">Visão geral do desempenho dos seus clipes</p>
+        <p class="page-subtitle">Visão geral do pipeline de produção dos seus clipes</p>
       </div>
-      <button id="sync-analytics-btn" class="btn btn-primary">Sincronizar Métricas</button>
+      <button id="sync-analytics-btn" class="btn btn-secondary btn-sm">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Sincronizar YouTube
+      </button>
     </div>
 
-    <div class="panel-container mb-6">
-      <div class="panel-header">
-        <h3>Resumo do Canal</h3>
-      </div>
-      <div class="panel-body">
-        <div class="stream-summary-stats" id="dashboard-metrics">
-          <div class="stat-item"><div class="stat-label">Total de Clipes</div><div class="stat-value">0</div></div>
-          <div class="stat-item"><div class="stat-label">Visualizações totais</div><div class="stat-value">0</div></div>
-          <div class="stat-item"><div class="stat-label">Curtidas totais</div><div class="stat-value">0</div></div>
-          <div class="stat-item"><div class="stat-label">Clipes Postados</div><div class="stat-value">0</div></div>
+    <div class="dash-kpi-row" id="dash-kpis">
+      <div class="kpi-card kpi-loading"><div class="kpi-skeleton"></div></div>
+      <div class="kpi-card kpi-loading"><div class="kpi-skeleton"></div></div>
+      <div class="kpi-card kpi-loading"><div class="kpi-skeleton"></div></div>
+      <div class="kpi-card kpi-loading"><div class="kpi-skeleton"></div></div>
+      <div class="kpi-card kpi-loading"><div class="kpi-skeleton"></div></div>
+    </div>
+
+    <div class="dash-body">
+      <div class="dash-main">
+        <div class="section-card" style="padding: var(--space-5);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-4);">
+            <h3 style="margin:0; font-size: 15px;">Top Clipes (Twitch Views)</h3>
+          </div>
+          <div id="top-clips-list">
+            <p class="text-muted text-sm">Carregando...</p>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="charts-row">
-      <div class="chart-card">
-        <h3>Visualizações por Dia</h3>
-        <canvas id="view-count-chart"></canvas>
+      <div class="dash-side">
+        <div class="section-card" style="padding: var(--space-5);">
+          <h3 style="margin-bottom: var(--space-4); font-size: 15px;">Status dos Clipes</h3>
+          <div style="position:relative; height:220px; width:100%;">
+            <canvas id="status-chart"></canvas>
+          </div>
+          <div id="status-legend" style="margin-top: var(--space-4);"></div>
+        </div>
       </div>
-      <div class="chart-card">
-        <h3>Status dos Clipes</h3>
-        <canvas id="status-chart"></canvas>
-      </div>
-    </div>
-
-    <div class="table-card">
-      <h3>Top Clipes (Mais Visualizados)</h3>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Título</th>
-            <th>Status</th>
-            <th>Plataforma</th>
-            <th>Visualizações</th>
-          </tr>
-        </thead>
-        <tbody id="top-clips-table">
-          <tr><td colspan="4" class="text-center">Carregando...</td></tr>
-        </tbody>
-      </table>
     </div>
   `;
 
   document.getElementById('sync-analytics-btn').addEventListener('click', async () => {
     try {
-      showToast('Sincronizando métricas...', 'info');
+      showToast('Sincronizando métricas do YouTube...', 'info');
       await api.fetchAllAnalytics();
-      showToast('Métricas sincronizadas com sucesso', 'success');
+      showToast('Métricas sincronizadas', 'success');
       await loadDashboardData();
     } catch (err) {
-      showToast('Erro ao sincronizar métricas: ' + err.message, 'error');
+      const msg = typeof err === 'string' ? err : (err?.message || JSON.stringify(err));
+      showToast('Erro: ' + msg, 'error');
     }
   });
 
@@ -74,44 +66,144 @@ export async function renderDashboard(container) {
 
 async function loadDashboardData() {
   try {
-    const stats = await api.getDashboardStats();
-    
-    document.getElementById('dashboard-metrics').innerHTML = `
-      <div class="stat-item"><div class="stat-label">Total de Clipes</div><div class="stat-value">${stats.totalClips || 0}</div></div>
-      <div class="stat-item"><div class="stat-label">Visualizações totais</div><div class="stat-value">${stats.totalViews || 0}</div></div>
-      <div class="stat-item"><div class="stat-label">Curtidas totais</div><div class="stat-value">${stats.totalLikes || 0}</div></div>
-      <div class="stat-item"><div class="stat-label">Clipes Postados</div><div class="stat-value">${stats.postedClips || 0}</div></div>
+    const [stats, statusCounts] = await Promise.all([
+      api.getDashboardStats(),
+      api.getClipsByStatusCount(),
+    ]);
+
+    const postedCount = statusCounts.find(s => s.status?.toLowerCase() === 'postado')?.count || 0;
+    const newCount = statusCounts.find(s => s.status?.toLowerCase() === 'novo')?.count || 0;
+    const editingCount = (statusCounts.find(s => s.status?.toLowerCase() === 'editando')?.count || 0)
+                       + (statusCounts.find(s => s.status?.toLowerCase() === 'editado')?.count || 0);
+
+    // KPI cards
+    document.getElementById('dash-kpis').innerHTML = `
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background: rgba(124,58,237,0.15); color: #a78bfa;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"/><path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/><path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z"/><path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z"/><path d="M14 14.5c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5z"/><path d="M15.5 19H14v1.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z"/><path d="M10 9.5C10 8.67 9.33 8 8.5 8h-5C2.67 8 2 8.67 2 9.5S2.67 11 3.5 11h5c.83 0 1.5-.67 1.5-1.5z"/><path d="M8.5 5H10V3.5C10 2.67 9.33 2 8.5 2S7 2.67 7 3.5 7.67 5 8.5 5z"/></svg>
+        </div>
+        <div>
+          <div class="kpi-value">${stats.total_clips || 0}</div>
+          <div class="kpi-label">Total de Clipes</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background: rgba(91,141,239,0.15); color: #5b8def;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <div>
+          <div class="kpi-value">${(stats.total_views || 0).toLocaleString('pt-BR')}</div>
+          <div class="kpi-label">Views (Twitch)</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background: rgba(52,211,153,0.15); color: #34d399;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        </div>
+        <div>
+          <div class="kpi-value">${postedCount}</div>
+          <div class="kpi-label">Postados</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background: rgba(240,160,48,0.15); color: #f0a030;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div>
+          <div class="kpi-value">${editingCount}</div>
+          <div class="kpi-label">Em Edição</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background: rgba(91,141,239,0.15); color: #5b8def;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15V6"/><path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/><path d="M12 12H3"/><path d="M16 6H3"/><path d="M12 18H3"/></svg>
+        </div>
+        <div>
+          <div class="kpi-value">${newCount}</div>
+          <div class="kpi-label">Aguardando Edição</div>
+        </div>
+      </div>
     `;
 
-    // Charts
-    const statusCounts = await api.getClipsByStatusCount();
-    const statusLabels = Object.keys(statusCounts);
-    const statusData = Object.values(statusCounts);
-    
+    // Status donut chart
+    const statusOrder = ['Novo', 'Editando', 'Editado', 'Postado', 'Descartado'];
+    const colorMap = {
+      Novo: '#5b8def',
+      Editando: '#f0a030',
+      Editado: '#a78bfa',
+      Postado: '#34d399',
+      Descartado: '#6b7280',
+    };
+    const labels = statusOrder.filter(s => statusCounts.some(sc => sc.status === s));
+    const data = labels.map(s => statusCounts.find(sc => sc.status === s)?.count || 0);
+    const colors = labels.map(s => colorMap[s] || '#6b7280');
+
     if (statusChart) statusChart.destroy();
-    statusChart = createDoughnutChart('status-chart', statusLabels, statusData);
+    const ctx = document.getElementById('status-chart')?.getContext('2d');
+    if (ctx && typeof Chart !== 'undefined' && labels.length > 0) {
+      statusChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels,
+          datasets: [{ data, backgroundColor: colors, borderColor: '#0f0f12', borderWidth: 3, hoverOffset: 6 }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '70%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (c) => ` ${c.label}: ${c.raw} clipes`,
+              },
+            },
+          },
+        },
+      });
+    } else if (ctx && labels.length === 0) {
+      document.getElementById('status-legend').innerHTML = '<p class="text-muted text-sm">Sem clipes ainda.</p>';
+    }
 
-    // Mock bar chart data since we don't have historical views API yet
-    if (viewCountChart) viewCountChart.destroy();
-    viewCountChart = createBarChart('view-count-chart', ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'], [12, 19, 3, 5, 2, 3, 7], 'Visualizações');
+    // Status legend
+    document.getElementById('status-legend').innerHTML = labels.map((s, i) => `
+      <div style="display:flex; align-items:center; justify-content:space-between; padding: 6px 0; border-bottom: 1px solid var(--border-subtle);">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="width:10px; height:10px; border-radius:50%; background:${colors[i]}; flex-shrink:0;"></span>
+          <span style="font-size:13px; color:var(--text-secondary);">${s}</span>
+        </div>
+        <span style="font-size:13px; font-weight:600; color:var(--text-primary);">${data[i]}</span>
+      </div>
+    `).join('');
 
-    // Table
-    const topClips = await api.getTopClips(5);
-    const tbody = document.getElementById('top-clips-table');
-    if (topClips && topClips.length > 0) {
-      tbody.innerHTML = topClips.map(clip => `
-        <tr>
-          <td>${clip.title}</td>
-          <td>${clip.status}</td>
-          <td>${clip.platform || '-'}</td>
-          <td>${clip.views || 0}</td>
-        </tr>
+    // Top clips by Twitch views
+    const allClips = await api.listClips({ sortBy: 'views', sortOrder: 'desc' });
+    const topClips = (Array.isArray(allClips) ? allClips : [])
+      .filter(c => c.views > 0)
+      .slice(0, 7);
+
+    const topEl = document.getElementById('top-clips-list');
+    if (topClips.length > 0) {
+      const maxViews = topClips[0].views || 1;
+      topEl.innerHTML = topClips.map((clip, i) => `
+        <div style="display:flex; align-items:center; gap:12px; padding: 10px 0; ${i < topClips.length - 1 ? 'border-bottom: 1px solid var(--border-subtle);' : ''}">
+          <span style="font-size:12px; font-weight:700; color:var(--text-muted); width:16px; text-align:center;">${i + 1}</span>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:13px; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${clip.title}</div>
+            <div style="margin-top:4px; height:4px; background:var(--bg-hover); border-radius:2px; overflow:hidden;">
+              <div style="height:100%; width:${Math.round((clip.views / maxViews) * 100)}%; background: linear-gradient(90deg, #7c3aed, #5b8def); border-radius:2px;"></div>
+            </div>
+          </div>
+          <span style="font-size:12px; font-weight:600; color:var(--text-secondary); white-space:nowrap;">${clip.views.toLocaleString('pt-BR')} views</span>
+        </div>
       `).join('');
     } else {
-      tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">Nenhum clipe encontrado</td></tr>`;
+      topEl.innerHTML = `<p class="text-muted text-sm">Importe clipes da Twitch para ver estatísticas de visualizações.</p>`;
     }
+
   } catch (err) {
-    console.error('Failed to load dashboard data', err);
-    showToast('Erro ao carregar dados do dashboard', 'error');
+    const msg = typeof err === 'string' ? err : (err?.message || JSON.stringify(err));
+    console.error('Dashboard error:', msg, err);
+    showToast('Erro ao carregar dashboard: ' + msg, 'error');
   }
 }

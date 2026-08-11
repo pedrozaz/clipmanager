@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS clips (
     status TEXT NOT NULL DEFAULT 'novo',
     notes TEXT,
     twitch_clip_id TEXT UNIQUE,
-    match_id TEXT
+    match_id TEXT,
+    views INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS categories (
@@ -75,12 +76,16 @@ pub fn init_db(app_dir: &Path) -> Result<Connection> {
     let conn = Connection::open(db_path)?;
     conn.execute_batch(MIGRATIONS_SQL)?;
 
+    // Ensure migration for existing DB
+    let _ = conn.execute("ALTER TABLE clips ADD COLUMN views INTEGER DEFAULT 0", []);
+
     Ok(conn)
 }
 
 pub fn init_in_memory_db() -> Result<Connection> {
     let conn = Connection::open_in_memory()?;
     conn.execute_batch(MIGRATIONS_SQL)?;
+    let _ = conn.execute("ALTER TABLE clips ADD COLUMN views INTEGER DEFAULT 0", []);
     Ok(conn)
 }
 

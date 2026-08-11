@@ -81,18 +81,26 @@ pub async fn import_twitch_clips(
     for clip in clips {
         let clip_date = clip.created_at.split('T').next().unwrap_or("").to_string();
         let duration_secs = clip.duration.round() as i64;
+        let created_at_iso = clip.created_at.clone();
 
         let res = conn.execute(
-            "INSERT INTO clips (title, twitch_url, thumbnail_url, duration, clip_date, status, twitch_clip_id)
-             VALUES (?1, ?2, ?3, ?4, ?5, 'novo', ?6)
-             ON CONFLICT(twitch_clip_id) DO NOTHING",
+            "INSERT INTO clips (title, twitch_url, thumbnail_url, duration, created_at, clip_date, status, twitch_clip_id, views)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'novo', ?7, ?8)
+             ON CONFLICT(twitch_clip_id) DO UPDATE SET
+                title = excluded.title,
+                thumbnail_url = excluded.thumbnail_url,
+                created_at = excluded.created_at,
+                clip_date = excluded.clip_date,
+                views = excluded.views",
             params![
                 clip.title,
                 clip.url,
                 clip.thumbnail_url,
                 duration_secs,
+                created_at_iso,
                 clip_date,
-                clip.id
+                clip.id,
+                clip.view_count
             ],
         );
 

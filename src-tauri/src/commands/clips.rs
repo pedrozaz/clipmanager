@@ -39,11 +39,20 @@ pub fn get_clip(state: State<'_, DbState>, id: i64) -> Result<Clip> {
 
 fn get_clip_internal(conn: &rusqlite::Connection, id: i64) -> Result<Clip> {
     let mut stmt = conn.prepare(
-        "SELECT id, title, twitch_url, youtube_url, instagram_url, thumbnail_url, duration, created_at, clip_date, status, notes, twitch_clip_id, match_id FROM clips WHERE id = ?1"
+        "SELECT c.id, c.title, c.twitch_url, c.youtube_url, c.instagram_url, c.thumbnail_url, c.duration, c.created_at, c.clip_date, c.status, c.notes, c.twitch_clip_id, c.match_id, c.views,
+                (SELECT GROUP_CONCAT(category_id) FROM clip_categories WHERE clip_id = c.id) AS category_ids
+         FROM clips c WHERE c.id = ?1"
     )?;
 
     let clip = stmt
         .query_row(params![id], |row| {
+            let cat_str: Option<String> = row.get(14)?;
+            let category_ids = cat_str.map(|s| {
+                s.split(',')
+                    .filter_map(|p| p.parse::<i64>().ok())
+                    .collect()
+            });
+
             Ok(Clip {
                 id: row.get(0)?,
                 title: row.get(1)?,
@@ -58,6 +67,8 @@ fn get_clip_internal(conn: &rusqlite::Connection, id: i64) -> Result<Clip> {
                 notes: row.get(10)?,
                 twitch_clip_id: row.get(11)?,
                 match_id: row.get(12)?,
+                views: row.get(13)?,
+                category_ids,
             })
         })
         .map_err(|_| AppError::NotFound(format!("Clip with id {id} not found")))?;
@@ -79,28 +90,31 @@ pub fn list_clips(
         .lock()
         .map_err(|e| AppError::Database(e.to_string()))?;
 
-    let mut sql = "SELECT id, title, twitch_url, youtube_url, instagram_url, thumbnail_url, duration, created_at, clip_date, status, notes, twitch_clip_id, match_id FROM clips WHERE 1=1".to_string();
+    let mut sql = "SELECT c.id, c.title, c.twitch_url, c.youtube_url, c.instagram_url, c.thumbnail_url, c.duration, c.created_at, c.clip_date, c.status, c.notes, c.twitch_clip_id, c.match_id, c.views,
+            (SELECT GROUP_CONCAT(category_id) FROM clip_categories WHERE clip_id = c.id) AS category_ids
+     FROM clips c WHERE 1=1".to_string();
     let mut param_values: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
 
     if let Some(ref status) = filter_status {
-        sql.push_str(" AND status = ?");
+        sql.push_str(" AND c.status = ?");
         param_values.push(Box::new(status.clone()));
     }
 
     if let Some(cat_id) = filter_category_id {
-        sql.push_str(" AND id IN (SELECT clip_id FROM clip_categories WHERE category_id = ?)");
+        sql.push_str(" AND c.id IN (SELECT clip_id FROM clip_categories WHERE category_id = ?)");
         param_values.push(Box::new(cat_id));
     }
 
     if let Some(ref search) = search_query {
-        sql.push_str(" AND title LIKE ?");
+        sql.push_str(" AND c.title LIKE ?");
         param_values.push(Box::new(format!("%{search}%")));
     }
 
     let sort_col = match sort_by.as_deref() {
-        Some("title") => "title",
-        Some("clip_date") => "clip_date",
-        _ => "created_at",
+        Some("title") => "c.title",
+        Some("clip_date") => "c.clip_date",
+        Some("views") => "c.views",
+        _ => "c.created_at",
     };
 
     let order = match sort_order.as_deref() {
@@ -115,6 +129,13 @@ pub fn list_clips(
 
     let clips = stmt
         .query_map(params_slice.as_slice(), |row| {
+            let cat_str: Option<String> = row.get(14)?;
+            let category_ids = cat_str.map(|s| {
+                s.split(',')
+                    .filter_map(|p| p.parse::<i64>().ok())
+                    .collect()
+            });
+
             Ok(Clip {
                 id: row.get(0)?,
                 title: row.get(1)?,
@@ -129,11 +150,24 @@ pub fn list_clips(
                 notes: row.get(10)?,
                 twitch_clip_id: row.get(11)?,
                 match_id: row.get(12)?,
+                views: row.get(13)?,
+                category_ids,
             })
         })?
         .collect::<std::result::Result<Vec<_>, _>>()?;
 
     Ok(clips)
+}
+
+#[tauri::command]
+pub fn delete_all_clips(state: State<'_, DbState>) -> Result<()> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| AppError::Database(e.to_string()))?;
+
+    conn.execute("DELETE FROM clips", [])?;
+    Ok(())
 }
 
 #[tauri::command]

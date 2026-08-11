@@ -15,6 +15,8 @@ pub struct Clip {
     pub notes: Option<String>,
     pub twitch_clip_id: Option<String>,
     pub match_id: Option<String>,
+    pub views: Option<i64>,
+    pub category_ids: Option<Vec<i64>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

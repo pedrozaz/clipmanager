@@ -47,6 +47,8 @@ pub fn export_data_json(state: State<'_, DbState>) -> Result<String> {
                 notes: row.get(10)?,
                 twitch_clip_id: row.get(11)?,
                 match_id: row.get(12)?,
+                views: None,
+                category_ids: None,
             })
         })?
         .collect::<std::result::Result<Vec<_>, _>>()?;
