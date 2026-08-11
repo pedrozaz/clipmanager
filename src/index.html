@@ -3,7 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ClipManager</title>
+    <title>ClipManager — Streamer Studio</title>
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    
     <link rel="stylesheet" href="css/reset.css" />
     <link rel="stylesheet" href="css/tokens.css" />
     <link rel="stylesheet" href="css/layout.css" />
@@ -15,19 +20,45 @@
     <div class="app-shell">
       <aside class="sidebar">
         <div class="brand">
-          <span>🎬 ClipManager</span>
+          <div class="brand-icon">🎬</div>
+          <div class="brand-text">
+            <span class="brand-name">ClipManager</span>
+            <span class="brand-tag">STREAMER STUDIO</span>
+          </div>
         </div>
         <nav>
           <ul class="nav-list">
-            <li class="nav-item"><a href="#/library" class="active">📚 Biblioteca</a></li>
-            <li class="nav-item"><a href="#/dashboard">📊 Dashboard</a></li>
-            <li class="nav-item"><a href="#/settings">⚙️ Configurações</a></li>
+            <li class="nav-item">
+              <a href="#/library" class="active">
+                <span class="nav-icon">📚</span>
+                <span>Biblioteca</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#/dashboard">
+                <span class="nav-icon">📊</span>
+                <span>Dashboard</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#/settings">
+                <span class="nav-icon">⚙️</span>
+                <span>Configurações</span>
+              </a>
+            </li>
           </ul>
         </nav>
+
+        <div class="sidebar-footer">
+          <div class="footer-badge">v1.0.0 Pro</div>
+        </div>
       </aside>
 
       <main id="app-container" class="main-content">
-        <h1>Carregando ClipManager...</h1>
+        <div class="loading-full-page">
+          <div class="spinner"></div>
+          <p>Carregando ClipManager...</p>
+        </div>
       </main>
     </div>
   </body>
