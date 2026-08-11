@@ -915,10 +915,10 @@ select option, .form-select option, .select option {
    DASHBOARD — PIPELINE VIEW
    ========================================================================== */
 
-/* Row of 5 KPI cards */
+/* Row of 6 KPI cards */
 .dash-kpi-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: var(--space-4);
   margin-bottom: var(--space-6);
 }

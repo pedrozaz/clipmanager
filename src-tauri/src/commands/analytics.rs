@@ -10,6 +10,7 @@ use tauri::State;
 pub struct DashboardStats {
     pub total_clips: i64,
     pub total_views: i64,
+    pub youtube_views: i64,
     pub avg_likes: f64,
     pub top_clip_title: Option<String>,
     pub top_clip_views: i64,
@@ -196,6 +197,14 @@ pub fn get_dashboard_stats(state: State<'_, DbState>) -> Result<DashboardStats> 
         )
         .unwrap_or(0);
 
+    let youtube_views: i64 = conn
+        .query_row(
+            "SELECT COALESCE(SUM(views), 0) FROM (SELECT views FROM analytics GROUP BY clip_id HAVING id = MAX(id))",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+
     let avg_likes: f64 = conn
         .query_row(
             "SELECT COALESCE(AVG(likes), 0.0) FROM (SELECT likes FROM analytics GROUP BY clip_id HAVING id = MAX(id))",
@@ -217,6 +226,7 @@ pub fn get_dashboard_stats(state: State<'_, DbState>) -> Result<DashboardStats> 
     Ok(DashboardStats {
         total_clips,
         total_views,
+        youtube_views,
         avg_likes,
         top_clip_title,
         top_clip_views,
