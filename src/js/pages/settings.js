@@ -163,17 +163,21 @@ export async function renderSettings(container) {
       body: `
         <div class="form-group">
           <label>Nome</label>
-          <input type="text" id="new-cat-name" class="form-input">
+          <input type="text" id="new-cat-name" class="form-input" placeholder="Ex: Valorant, Highlights...">
         </div>
         <div class="form-group">
-          <label>Cor (Hex)</label>
-          <input type="text" id="new-cat-color" class="form-input" value="#ffffff">
+          <label>Cor</label>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <input type="color" id="new-cat-color" value="#a78bfa"
+              style="width:48px; height:40px; border:none; border-radius:8px; cursor:pointer; background:none; padding:2px;">
+            <span id="new-cat-color-label" style="font-size:13px; color:var(--text-secondary); font-family:monospace;">#a78bfa</span>
+          </div>
         </div>
       `,
       buttons: [
         { text: 'Cancelar', class: 'btn btn-secondary', close: true },
         { text: 'Salvar', class: 'btn btn-primary', onClick: async (modal) => {
-          const name = document.getElementById('new-cat-name').value;
+          const name = document.getElementById('new-cat-name').value.trim();
           const color = document.getElementById('new-cat-color').value;
           if(name && color) {
             try {
@@ -186,7 +190,16 @@ export async function renderSettings(container) {
             }
           }
         }}
-      ]
+      ],
+      onOpen: () => {
+        const colorInput = document.getElementById('new-cat-color');
+        const colorLabel = document.getElementById('new-cat-color-label');
+        if (colorInput && colorLabel) {
+          colorInput.addEventListener('input', () => {
+            colorLabel.textContent = colorInput.value;
+          });
+        }
+      }
     });
   });
 

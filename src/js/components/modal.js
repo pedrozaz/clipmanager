@@ -1,4 +1,4 @@
-export function showModal({ title, body, buttons }) {
+export function showModal({ title, body, buttons, onOpen }) {
   let modalOverlay = document.getElementById("modal-overlay");
   if (modalOverlay) modalOverlay.remove();
 
@@ -51,5 +51,10 @@ export function showModal({ title, body, buttons }) {
         });
       }
     });
+  }
+
+  // Chama o callback após o modal estar montado no DOM
+  if (typeof onOpen === 'function') {
+    onOpen(modalAPI);
   }
 }

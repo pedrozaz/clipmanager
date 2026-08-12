@@ -12,6 +12,10 @@ pub struct TwitchClipData {
     pub duration: f64,
     pub created_at: String,
     pub view_count: i64,
+    #[serde(default)]
+    pub game_id: String,
+    #[serde(default)]
+    pub game_name: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -156,7 +160,9 @@ mod tests {
                     "thumbnail_url": "https://static-cdn.jtvnw.net/twitch-clips-thumbnails/RandomClipId123-preview-480x272.jpg",
                     "duration": 29.5,
                     "created_at": "2026-08-10T20:15:00Z",
-                    "view_count": 1420
+                    "view_count": 1420,
+                    "game_id": "516575",
+                    "game_name": "VALORANT"
                 }
             ]
         }"#;

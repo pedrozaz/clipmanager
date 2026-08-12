@@ -73,6 +73,12 @@ pub async fn import_twitch_clips(
     let mut skipped = 0;
     let mut errors = Vec::new();
 
+    // Paleta de cores para categorias auto-geradas (baseada no índice do game_id)
+    const CATEGORY_COLORS: &[&str] = &[
+        "#a78bfa", "#34d399", "#f59e0b", "#60a5fa", "#f472b6", "#fb923c", "#2dd4bf", "#818cf8",
+        "#e879f9", "#4ade80",
+    ];
+
     let conn = state
         .db
         .lock()
@@ -104,17 +110,62 @@ pub async fn import_twitch_clips(
             ],
         );
 
-        match res {
+        let clip_db_id = match res {
             Ok(rows) => {
                 if rows > 0 {
                     imported += 1;
                 } else {
                     skipped += 1;
                 }
+                // Busca o id do clipe (novo ou já existente)
+                conn.query_row(
+                    "SELECT id FROM clips WHERE twitch_clip_id = ?1",
+                    params![clip.id],
+                    |row| row.get::<_, i64>(0),
+                )
+                .ok()
             }
             Err(e) => {
                 errors.push(format!("Failed to insert clip '{}': {e}", clip.title));
+                None
             }
+        };
+
+        // Auto-categorizar pelo jogo da Twitch
+        if let (Some(db_id), game_name) = (clip_db_id, &clip.game_name)
+            && !game_name.is_empty()
+        {
+            // Cria a categoria se não existir, reutiliza se já existe
+            let category_id: Result<i64> = conn
+                .query_row(
+                    "SELECT id FROM categories WHERE name = ?1",
+                    params![game_name],
+                    |row| row.get(0),
+                )
+                .map_err(|_| AppError::NotFound("not found".to_string()));
+
+            let cat_id = match category_id {
+                Ok(id) => id,
+                Err(_) => {
+                    // Cor determinística baseada no comprimento do nome do jogo
+                    let color_idx = game_name.len() % CATEGORY_COLORS.len();
+                    let color = CATEGORY_COLORS[color_idx];
+                    if let Err(e) = conn.execute(
+                        "INSERT INTO categories (name, color) VALUES (?1, ?2)",
+                        params![game_name, color],
+                    ) {
+                        errors.push(format!("Failed to create category '{game_name}': {e}"));
+                        continue;
+                    }
+                    conn.last_insert_rowid()
+                }
+            };
+
+            // Vincula categoria ao clipe (ignora se já existe)
+            let _ = conn.execute(
+                "INSERT OR IGNORE INTO clip_categories (clip_id, category_id) VALUES (?1, ?2)",
+                params![db_id, cat_id],
+            );
         }
     }
 
