@@ -21,7 +21,7 @@ function getTwitchEmbedUrl(clip) {
 
   if (!slug) return null;
 
-  return `https://clips.twitch.tv/embed?clip=${encodeURIComponent(slug)}&parent=localhost&parent=127.0.0.1&autoplay=false`;
+  return `https://clips.twitch.tv/embed?clip=${encodeURIComponent(slug)}&parent=localhost&parent=127.0.0.1&parent=tauri.localhost&autoplay=false`;
 }
 
 function getYoutubeEmbedUrl(youtubeUrl) {
