@@ -53,14 +53,27 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install
 
-      - name: Build Tauri App (Windows & Linux)
+      - name: Build and publish Tauri App
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Chave privada para assinar os pacotes do auto-updater.
+          # Gere com: tauri signer generate -w ~/.tauri/myapp.key
+          # Adicione ao repositório: Settings > Secrets > TAURI_SIGNING_PRIVATE_KEY
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Assuna - Clip Manager ${{ github.ref_name }}"
-          releaseBody: "Versão oficial compilada do Assuna - Clip Manager para Windows (.exe / .msi) e Linux (.deb / .AppImage)."
-          releaseDraft: true
+          releaseBody: |
+            ## Assuna - Clip Manager ${{ github.ref_name }}
+
+            ### Instalação
+            - **Windows:** Baixe o arquivo `.exe` abaixo e execute o instalador.
+            - **Linux (Debian/Ubuntu):** Baixe o arquivo `.deb` e instale com `sudo dpkg -i *.deb`.
+            - **Linux (outras distros):** Use o arquivo `.AppImage` — dê permissão de execução e abra diretamente.
+
+            > Usuários que já possuem o app instalado podem atualizar clicando em **Verificar Atualização** dentro de Configurações.
+          releaseDraft: false
           prerelease: false
           args: --target ${{ matrix.target }}

@@ -80,4 +80,8 @@ export const api = {
   exportDataJson: () => invoke("export_data_json"),
   exportClipsCsv: () => invoke("export_clips_csv"),
   importDataJson: (jsonStr) => invoke("import_data_json", { jsonStr }),
+
+  // Updater
+  checkForUpdate: () => invoke("check_for_update"),
+  installUpdate: () => invoke("install_update"),
 };

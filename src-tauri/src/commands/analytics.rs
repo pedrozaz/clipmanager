@@ -190,11 +190,9 @@ pub fn get_dashboard_stats(state: State<'_, DbState>) -> Result<DashboardStats> 
         .unwrap_or(0);
 
     let total_views: i64 = conn
-        .query_row(
-            "SELECT COALESCE(SUM(views), 0) FROM clips",
-            [],
-            |r| r.get(0),
-        )
+        .query_row("SELECT COALESCE(SUM(views), 0) FROM clips", [], |r| {
+            r.get(0)
+        })
         .unwrap_or(0);
 
     let youtube_views: i64 = conn

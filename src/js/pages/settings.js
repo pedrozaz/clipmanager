@@ -80,6 +80,21 @@ export async function renderSettings(container) {
       </div>
     </div>
 
+    </div>
+
+    <div class="section-card full-width mt-4">
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+        <div>
+          <h3 style="margin:0 0 4px 0;">Atualizações do Aplicativo</h3>
+          <p class="section-desc" style="margin:0;">Versão atual: <strong id="current-app-version">2.0.1</strong></p>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;" id="update-status-area">
+          <button id="check-update-btn" class="btn btn-secondary">Verificar Atualização</button>
+        </div>
+      </div>
+      <div id="update-info" style="margin-top:14px; display:none;"></div>
+    </div>
+
     <div class="section-card full-width mt-4">
       <h3>Backup & Dados</h3>
       <p class="section-desc">Gerencie o banco de dados local</p>
@@ -217,6 +232,61 @@ export async function renderSettings(container) {
     } catch(e) {
       console.error('Import error:', e);
       showToast('Erro ao importar: ' + (e.message || e), 'error');
+    }
+  });
+
+  // ── Auto-Updater ─────────────────────────────────────────────────────────
+  document.getElementById('check-update-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('check-update-btn');
+    const infoEl = document.getElementById('update-info');
+    btn.disabled = true;
+    btn.textContent = 'Verificando...';
+    infoEl.style.display = 'none';
+
+    try {
+      const result = await api.checkForUpdate();
+
+      if (result.available) {
+        infoEl.style.display = 'block';
+        infoEl.innerHTML = `
+          <div style="background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); border-radius: 8px; padding: 14px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+              <div>
+                <p style="margin:0 0 4px 0; color:#34d399; font-weight:600;">Nova versão disponível: v${result.version}</p>
+                <p style="margin:0; font-size:12px; color:var(--text-secondary);">Versão instalada: v${result.current_version}</p>
+                ${result.body ? `<p style="margin:8px 0 0 0; font-size:13px; color:var(--text-primary);">${result.body}</p>` : ''}
+              </div>
+              <button id="install-update-btn" class="btn btn-primary" style="background:#34d399; color:#000; border-color:#34d399;">
+                Instalar e Reiniciar
+              </button>
+            </div>
+          </div>
+        `;
+        document.getElementById('install-update-btn').addEventListener('click', async () => {
+          const installBtn = document.getElementById('install-update-btn');
+          installBtn.disabled = true;
+          installBtn.textContent = 'Baixando...';
+          try {
+            await api.installUpdate();
+            showToast('Atualização instalada! O app será reiniciado.', 'success');
+          } catch(e) {
+            showToast('Erro ao instalar: ' + (e.message || e), 'error');
+            installBtn.disabled = false;
+            installBtn.textContent = 'Instalar e Reiniciar';
+          }
+        });
+      } else {
+        infoEl.style.display = 'block';
+        infoEl.innerHTML = `
+          <p style="margin:0; color:var(--text-secondary); font-size:13px;">O app está na versão mais recente.</p>
+        `;
+      }
+    } catch(e) {
+      infoEl.style.display = 'block';
+      infoEl.innerHTML = `<p style="margin:0; color:var(--text-error); font-size:13px;">Não foi possível verificar: ${e}</p>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Verificar Atualização';
     }
   });
 }

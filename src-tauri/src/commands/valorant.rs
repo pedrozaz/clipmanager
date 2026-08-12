@@ -56,7 +56,9 @@ pub async fn fetch_recent_matches(
     }
 
     let client = HenrikClient::new(api_key);
-    client.get_recent_matches(&region, parts[0], parts[1], size, start, mode.as_deref()).await
+    client
+        .get_recent_matches(&region, parts[0], parts[1], size, start, mode.as_deref())
+        .await
 }
 
 #[tauri::command]
@@ -91,7 +93,9 @@ pub async fn fetch_match_by_id(
         }
 
         (
-            rid.ok_or_else(|| AppError::NotFound("Riot ID não configurado nas Configurações.".to_string()))?,
+            rid.ok_or_else(|| {
+                AppError::NotFound("Riot ID não configurado nas Configurações.".to_string())
+            })?,
             reg.unwrap_or_else(|| "br".to_string()),
             key,
         )

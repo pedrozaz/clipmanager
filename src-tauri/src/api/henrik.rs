@@ -91,7 +91,11 @@ impl HenrikClient {
     ) -> Result<Vec<ValorantMatchInfo>> {
         let size_val = size.unwrap_or(10);
         let start_val = start.unwrap_or(0);
-        let reg = if region.trim().is_empty() { "br" } else { region.trim() };
+        let reg = if region.trim().is_empty() {
+            "br"
+        } else {
+            region.trim()
+        };
 
         let mut url = format!(
             "https://api.henrikdev.xyz/valorant/v3/matches/{}/{}/{}?size={}&start={}",
@@ -248,7 +252,9 @@ impl HenrikClient {
             .unwrap_or("Desconhecido")
             .to_string();
 
-        let game_start = data.pointer("/metadata/game_start").and_then(|v| v.as_i64());
+        let game_start = data
+            .pointer("/metadata/game_start")
+            .and_then(|v| v.as_i64());
         let game_start_patched = data
             .pointer("/metadata/game_start_patched")
             .and_then(|v| v.as_str())
@@ -262,7 +268,9 @@ impl HenrikClient {
             None => game_start_patched,
         };
 
-        let players = data.pointer("/players/all_players").and_then(|v| v.as_array());
+        let players = data
+            .pointer("/players/all_players")
+            .and_then(|v| v.as_array());
         let target_player = players.and_then(|plist| {
             plist
                 .iter()
@@ -294,7 +302,11 @@ impl HenrikClient {
                     .and_then(|s| s.get("assists"))
                     .and_then(|v| v.as_i64())
                     .unwrap_or(0);
-                let t_name = p.get("team").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                let t_name = p
+                    .get("team")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string();
                 (char_name, format!("{k}/{d}/{a}"), t_name)
             }
             None => ("Agente".to_string(), "0/0/0".to_string(), "".to_string()),

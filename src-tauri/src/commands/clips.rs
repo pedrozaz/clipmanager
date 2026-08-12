@@ -47,11 +47,8 @@ fn get_clip_internal(conn: &rusqlite::Connection, id: i64) -> Result<Clip> {
     let clip = stmt
         .query_row(params![id], |row| {
             let cat_str: Option<String> = row.get(14)?;
-            let category_ids = cat_str.map(|s| {
-                s.split(',')
-                    .filter_map(|p| p.parse::<i64>().ok())
-                    .collect()
-            });
+            let category_ids =
+                cat_str.map(|s| s.split(',').filter_map(|p| p.parse::<i64>().ok()).collect());
 
             Ok(Clip {
                 id: row.get(0)?,
@@ -130,11 +127,8 @@ pub fn list_clips(
     let clips = stmt
         .query_map(params_slice.as_slice(), |row| {
             let cat_str: Option<String> = row.get(14)?;
-            let category_ids = cat_str.map(|s| {
-                s.split(',')
-                    .filter_map(|p| p.parse::<i64>().ok())
-                    .collect()
-            });
+            let category_ids =
+                cat_str.map(|s| s.split(',').filter_map(|p| p.parse::<i64>().ok()).collect());
 
             Ok(Clip {
                 id: row.get(0)?,
@@ -197,10 +191,7 @@ pub fn update_clip(
         .map(|u| !u.trim().is_empty())
         .unwrap_or(false);
 
-    let effective_status = if has_youtube
-        && status != "Postado"
-        && status != "Descartado"
-    {
+    let effective_status = if has_youtube && status != "Postado" && status != "Descartado" {
         "Postado".to_string()
     } else {
         status
