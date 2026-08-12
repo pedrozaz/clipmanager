@@ -24,6 +24,12 @@ function getTwitchMp4Url(clip) {
   return null;
 }
 
+function getTwitchParents() {
+  const parents = new Set(['localhost', '127.0.0.1', 'tauri.localhost']);
+  if (window.location.hostname) parents.add(window.location.hostname);
+  return [...parents].map(p => `parent=${encodeURIComponent(p)}`).join('&');
+}
+
 function getTwitchEmbedUrl(clip) {
   const url = clip.embed_url || clip.twitch_url || '';
   if (!url) return null;
@@ -38,7 +44,7 @@ function getTwitchEmbedUrl(clip) {
 
   if (!slug) return null;
 
-  return `https://clips.twitch.tv/embed?clip=${encodeURIComponent(slug)}&parent=localhost&parent=127.0.0.1&autoplay=false`;
+  return `https://clips.twitch.tv/embed?clip=${encodeURIComponent(slug)}&${getTwitchParents()}&autoplay=false`;
 }
 
 function getYoutubeEmbedUrl(youtubeUrl) {

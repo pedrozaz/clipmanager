@@ -1,6 +1,6 @@
 [package]
 name = "clipmanager"
-version = "2.0.7"
+version = "2.0.8"
 description = "Organizador de clipes para streamer"
 authors = ["pedroza"]
 edition = "2024"

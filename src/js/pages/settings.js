@@ -86,7 +86,7 @@ export async function renderSettings(container) {
       <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
         <div>
           <h3 style="margin:0 0 4px 0;">Atualizações do Aplicativo</h3>
-          <p class="section-desc" style="margin:0;">Versão atual: <strong id="current-app-version">2.0.7</strong></p>
+          <p class="section-desc" style="margin:0;">Versão atual: <strong id="current-app-version">2.0.8</strong></p>
         </div>
         <div style="display:flex; align-items:center; gap:10px;" id="update-status-area">
           <button id="check-update-btn" class="btn btn-secondary">Verificar Atualização</button>
