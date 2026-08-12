@@ -19,10 +19,17 @@ function getTwitchEmbedUrl(clip) {
     slug = url;
   }
 
-  if (slug) {
-    return `https://clips.twitch.tv/embed?clip=${encodeURIComponent(slug)}&parent=localhost&parent=tauri.localhost&parent=127.0.0.1&autoplay=false`;
-  }
-  return null;
+  if (!slug) return null;
+
+  // Detecta o hostname atual em runtime para suportar ambos:
+  // - Linux/WebKitGTK: window.location.hostname = "localhost" ou "127.0.0.1"
+  // - Windows/WebView2: window.location.hostname = "tauri.localhost"
+  // O Twitch valida o Referer do iframe — precisamos passar o hostname exato.
+  const currentHost = window.location.hostname || 'localhost';
+  const parents = new Set(['localhost', 'tauri.localhost', '127.0.0.1', currentHost]);
+  const parentParams = [...parents].map(p => `parent=${encodeURIComponent(p)}`).join('&');
+
+  return `https://clips.twitch.tv/embed?clip=${encodeURIComponent(slug)}&${parentParams}&autoplay=false`;
 }
 
 function getYoutubeEmbedUrl(youtubeUrl) {
