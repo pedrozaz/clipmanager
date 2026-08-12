@@ -39,14 +39,14 @@ pub fn get_clip(state: State<'_, DbState>, id: i64) -> Result<Clip> {
 
 fn get_clip_internal(conn: &rusqlite::Connection, id: i64) -> Result<Clip> {
     let mut stmt = conn.prepare(
-        "SELECT c.id, c.title, c.twitch_url, c.youtube_url, c.instagram_url, c.thumbnail_url, c.duration, c.created_at, c.clip_date, c.status, c.notes, c.twitch_clip_id, c.match_id, c.views,
+        "SELECT c.id, c.title, c.twitch_url, c.youtube_url, c.instagram_url, c.thumbnail_url, c.duration, c.created_at, c.clip_date, c.status, c.notes, c.twitch_clip_id, c.match_id, c.views, c.game_name,
                 (SELECT GROUP_CONCAT(category_id) FROM clip_categories WHERE clip_id = c.id) AS category_ids
          FROM clips c WHERE c.id = ?1"
     )?;
 
     let clip = stmt
         .query_row(params![id], |row| {
-            let cat_str: Option<String> = row.get(14)?;
+            let cat_str: Option<String> = row.get(15)?;
             let category_ids =
                 cat_str.map(|s| s.split(',').filter_map(|p| p.parse::<i64>().ok()).collect());
 
@@ -65,6 +65,7 @@ fn get_clip_internal(conn: &rusqlite::Connection, id: i64) -> Result<Clip> {
                 twitch_clip_id: row.get(11)?,
                 match_id: row.get(12)?,
                 views: row.get(13)?,
+                game_name: row.get(14)?,
                 category_ids,
             })
         })
@@ -87,7 +88,7 @@ pub fn list_clips(
         .lock()
         .map_err(|e| AppError::Database(e.to_string()))?;
 
-    let mut sql = "SELECT c.id, c.title, c.twitch_url, c.youtube_url, c.instagram_url, c.thumbnail_url, c.duration, c.created_at, c.clip_date, c.status, c.notes, c.twitch_clip_id, c.match_id, c.views,
+    let mut sql = "SELECT c.id, c.title, c.twitch_url, c.youtube_url, c.instagram_url, c.thumbnail_url, c.duration, c.created_at, c.clip_date, c.status, c.notes, c.twitch_clip_id, c.match_id, c.views, c.game_name,
             (SELECT GROUP_CONCAT(category_id) FROM clip_categories WHERE clip_id = c.id) AS category_ids
      FROM clips c WHERE 1=1".to_string();
     let mut param_values: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
@@ -126,7 +127,7 @@ pub fn list_clips(
 
     let clips = stmt
         .query_map(params_slice.as_slice(), |row| {
-            let cat_str: Option<String> = row.get(14)?;
+            let cat_str: Option<String> = row.get(15)?;
             let category_ids =
                 cat_str.map(|s| s.split(',').filter_map(|p| p.parse::<i64>().ok()).collect());
 
@@ -145,6 +146,7 @@ pub fn list_clips(
                 twitch_clip_id: row.get(11)?,
                 match_id: row.get(12)?,
                 views: row.get(13)?,
+                game_name: row.get(14)?,
                 category_ids,
             })
         })?

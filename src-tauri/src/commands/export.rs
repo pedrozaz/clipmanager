@@ -30,7 +30,7 @@ pub fn export_data_json(state: State<'_, DbState>) -> Result<String> {
         .lock()
         .map_err(|e| AppError::Database(e.to_string()))?;
 
-    let mut stmt_clips = conn.prepare("SELECT id, title, twitch_url, youtube_url, instagram_url, thumbnail_url, duration, created_at, clip_date, status, notes, twitch_clip_id, match_id FROM clips")?;
+    let mut stmt_clips = conn.prepare("SELECT id, title, twitch_url, youtube_url, instagram_url, thumbnail_url, duration, created_at, clip_date, status, notes, twitch_clip_id, match_id, views, game_name FROM clips")?;
     let clips = stmt_clips
         .query_map([], |row| {
             Ok(Clip {
@@ -47,7 +47,8 @@ pub fn export_data_json(state: State<'_, DbState>) -> Result<String> {
                 notes: row.get(10)?,
                 twitch_clip_id: row.get(11)?,
                 match_id: row.get(12)?,
-                views: None,
+                views: row.get(13)?,
+                game_name: row.get(14)?,
                 category_ids: None,
             })
         })?
@@ -218,13 +219,13 @@ pub fn import_data_json(state: State<'_, DbState>, json_str: String) -> Result<I
 
     for clip in backup.clips {
         let res = tx.execute(
-            "INSERT INTO clips (id, title, twitch_url, youtube_url, instagram_url, thumbnail_url, duration, created_at, clip_date, status, notes, twitch_clip_id, match_id)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
-             ON CONFLICT(id) DO UPDATE SET title = excluded.title, status = excluded.status, notes = excluded.notes",
+            "INSERT INTO clips (id, title, twitch_url, youtube_url, instagram_url, thumbnail_url, duration, created_at, clip_date, status, notes, twitch_clip_id, match_id, views, game_name)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)
+             ON CONFLICT(id) DO UPDATE SET title = excluded.title, status = excluded.status, notes = excluded.notes, views = excluded.views, game_name = excluded.game_name",
             params![
                 clip.id, clip.title, clip.twitch_url, clip.youtube_url, clip.instagram_url,
                 clip.thumbnail_url, clip.duration, clip.created_at, clip.clip_date, clip.status,
-                clip.notes, clip.twitch_clip_id, clip.match_id
+                clip.notes, clip.twitch_clip_id, clip.match_id, clip.views, clip.game_name
             ],
         );
         if res.is_ok() {

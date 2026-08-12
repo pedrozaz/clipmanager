@@ -38,6 +38,17 @@ struct TwitchTokenResponse {
     access_token: String,
 }
 
+#[derive(Debug, Deserialize)]
+struct TwitchGameResponse {
+    data: Vec<TwitchGame>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TwitchGame {
+    id: String,
+    name: String,
+}
+
 pub struct TwitchClient {
     client_id: String,
     client_secret: String,
@@ -109,6 +120,55 @@ impl TwitchClient {
         Ok(user.id)
     }
 
+    pub async fn get_games_by_ids(
+        &self,
+        game_ids: &[String],
+    ) -> Result<std::collections::HashMap<String, String>> {
+        if game_ids.is_empty() {
+            return Ok(std::collections::HashMap::new());
+        }
+
+        let token = self
+            .access_token
+            .as_ref()
+            .ok_or_else(|| AppError::Api("Twitch client not authenticated".to_string()))?;
+
+        let mut query_params: Vec<(&str, &str)> = Vec::new();
+        for id in game_ids {
+            if !id.is_empty() {
+                query_params.push(("id", id.as_str()));
+            }
+        }
+
+        if query_params.is_empty() {
+            return Ok(std::collections::HashMap::new());
+        }
+
+        let res = self
+            .http
+            .get("https://api.twitch.tv/helix/games")
+            .query(&query_params)
+            .header("Client-ID", &self.client_id)
+            .header("Authorization", format!("Bearer {token}"))
+            .send()
+            .await?;
+
+        if !res.status().is_success() {
+            return Ok(std::collections::HashMap::new());
+        }
+
+        let game_res: TwitchGameResponse = res
+            .json()
+            .await
+            .unwrap_or(TwitchGameResponse { data: vec![] });
+        let mut map = std::collections::HashMap::new();
+        for game in game_res.data {
+            map.insert(game.id, game.name);
+        }
+
+        Ok(map)
+    }
+
     pub async fn get_clips(
         &self,
         broadcaster_id: &str,
@@ -140,7 +200,23 @@ impl TwitchClient {
         }
 
         let clips_res: TwitchClipsResponse = res.json().await?;
-        Ok(clips_res.data)
+        let mut clips = clips_res.data;
+
+        let game_ids: Vec<String> = clips
+            .iter()
+            .map(|c| c.game_id.clone())
+            .filter(|id| !id.is_empty())
+            .collect();
+
+        if let Ok(games_map) = self.get_games_by_ids(&game_ids).await {
+            for clip in &mut clips {
+                if let Some(name) = games_map.get(&clip.game_id) {
+                    clip.game_name = name.clone();
+                }
+            }
+        }
+
+        Ok(clips)
     }
 }
 

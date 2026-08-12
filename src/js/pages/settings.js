@@ -86,7 +86,7 @@ export async function renderSettings(container) {
       <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
         <div>
           <h3 style="margin:0 0 4px 0;">Atualizações do Aplicativo</h3>
-          <p class="section-desc" style="margin:0;">Versão atual: <strong id="current-app-version">2.0.2</strong></p>
+          <p class="section-desc" style="margin:0;">Versão atual: <strong id="current-app-version">2.0.3</strong></p>
         </div>
         <div style="display:flex; align-items:center; gap:10px;" id="update-status-area">
           <button id="check-update-btn" class="btn btn-secondary">Verificar Atualização</button>
@@ -252,14 +252,20 @@ export async function renderSettings(container) {
   document.getElementById('check-update-btn').addEventListener('click', async () => {
     const btn = document.getElementById('check-update-btn');
     const infoEl = document.getElementById('update-info');
+    const currentVer = document.getElementById('current-app-version')?.textContent || '2.0.2';
     btn.disabled = true;
     btn.textContent = 'Verificando...';
     infoEl.style.display = 'none';
 
     try {
-      const result = await api.checkForUpdate();
+      let result = null;
+      try {
+        result = await api.checkForUpdate();
+      } catch(e) {
+        console.warn('Native updater check failed, trying GitHub API fallback:', e);
+      }
 
-      if (result.available) {
+      if (result && result.available) {
         infoEl.style.display = 'block';
         infoEl.innerHTML = `
           <div style="background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); border-radius: 8px; padding: 14px;">
@@ -288,20 +294,71 @@ export async function renderSettings(container) {
             installBtn.textContent = 'Instalar e Reiniciar';
           }
         });
-      } else {
+        return;
+      }
+
+      // Fallback via GitHub Releases API
+      const ghRelease = await checkGitHubReleasesFallback(currentVer);
+      if (ghRelease && ghRelease.isNewer) {
         infoEl.style.display = 'block';
         infoEl.innerHTML = `
-          <p style="margin:0; color:var(--text-secondary); font-size:13px;">O app está na versão mais recente.</p>
+          <div style="background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); border-radius: 8px; padding: 14px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+              <div>
+                <p style="margin:0 0 4px 0; color:#34d399; font-weight:600;">Nova versão disponível no GitHub: v${ghRelease.version}</p>
+                <p style="margin:0; font-size:12px; color:var(--text-secondary);">Versão instalada: v${currentVer}</p>
+              </div>
+              <a href="${ghRelease.url}" target="_blank" class="btn btn-primary" style="background:#34d399; color:#000; border-color:#34d399; text-decoration:none;">
+                Baixar Atualização ↗
+              </a>
+            </div>
+          </div>
         `;
+        return;
       }
+
+      infoEl.style.display = 'block';
+      infoEl.innerHTML = `
+        <p style="margin:0; color:var(--text-secondary); font-size:13px;">O aplicativo já está na versão mais recente (v${currentVer}).</p>
+      `;
     } catch(e) {
       infoEl.style.display = 'block';
-      infoEl.innerHTML = `<p style="margin:0; color:var(--text-error); font-size:13px;">Não foi possível verificar: ${e}</p>`;
+      infoEl.innerHTML = `<p style="margin:0; color:var(--text-error); font-size:13px;">Não foi possível verificar: ${e.message || e}</p>`;
     } finally {
       btn.disabled = false;
       btn.textContent = 'Verificar Atualização';
     }
   });
+}
+
+async function checkGitHubReleasesFallback(currentVersion) {
+  try {
+    const res = await fetch('https://api.github.com/repos/pedrozaz/clipmanager/releases/latest');
+    if (!res.ok) return null;
+    const release = await res.json();
+    const latestTag = (release.tag_name || '').replace(/^v/, '');
+    if (!latestTag) return null;
+
+    const curParts = currentVersion.split('.').map(Number);
+    const latParts = latestTag.split('.').map(Number);
+    let isNewer = false;
+    for (let i = 0; i < Math.max(curParts.length, latParts.length); i++) {
+      const c = curParts[i] || 0;
+      const l = latParts[i] || 0;
+      if (l > c) { isNewer = true; break; }
+      if (l < c) { isNewer = false; break; }
+    }
+
+    const exeAsset = (release.assets || []).find(a => a.name.endsWith('.exe') || a.name.endsWith('.msi'));
+    return {
+      isNewer,
+      version: latestTag,
+      body: release.body || '',
+      url: exeAsset ? exeAsset.browser_download_url : release.html_url
+    };
+  } catch(_) {
+    return null;
+  }
 }
 
 async function loadSettingsData() {

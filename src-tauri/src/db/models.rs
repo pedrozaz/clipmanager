@@ -16,6 +16,7 @@ pub struct Clip {
     pub twitch_clip_id: Option<String>,
     pub match_id: Option<String>,
     pub views: Option<i64>,
+    pub game_name: Option<String>,
     pub category_ids: Option<Vec<i64>>,
 }
 

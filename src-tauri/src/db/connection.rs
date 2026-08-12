@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS clips (
     notes TEXT,
     twitch_clip_id TEXT UNIQUE,
     match_id TEXT,
-    views INTEGER DEFAULT 0
+    views INTEGER DEFAULT 0,
+    game_name TEXT
 );
 
 CREATE TABLE IF NOT EXISTS categories (
@@ -78,6 +79,7 @@ pub fn init_db(app_dir: &Path) -> Result<Connection> {
 
     // Ensure migration for existing DB
     let _ = conn.execute("ALTER TABLE clips ADD COLUMN views INTEGER DEFAULT 0", []);
+    let _ = conn.execute("ALTER TABLE clips ADD COLUMN game_name TEXT", []);
 
     // Normalize legacy lowercase statuses to Title Case
     let _ = conn.execute(
@@ -100,6 +102,7 @@ pub fn init_in_memory_db() -> Result<Connection> {
     let conn = Connection::open_in_memory()?;
     conn.execute_batch(MIGRATIONS_SQL)?;
     let _ = conn.execute("ALTER TABLE clips ADD COLUMN views INTEGER DEFAULT 0", []);
+    let _ = conn.execute("ALTER TABLE clips ADD COLUMN game_name TEXT", []);
     Ok(conn)
 }
 

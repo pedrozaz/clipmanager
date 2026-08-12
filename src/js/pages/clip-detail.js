@@ -21,15 +21,7 @@ function getTwitchEmbedUrl(clip) {
 
   if (!slug) return null;
 
-  // Detecta o hostname atual em runtime para suportar ambos:
-  // - Linux/WebKitGTK: window.location.hostname = "localhost" ou "127.0.0.1"
-  // - Windows/WebView2: window.location.hostname = "tauri.localhost"
-  // O Twitch valida o Referer do iframe — precisamos passar o hostname exato.
-  const currentHost = window.location.hostname || 'localhost';
-  const parents = new Set(['localhost', 'tauri.localhost', '127.0.0.1', currentHost]);
-  const parentParams = [...parents].map(p => `parent=${encodeURIComponent(p)}`).join('&');
-
-  return `https://clips.twitch.tv/embed?clip=${encodeURIComponent(slug)}&${parentParams}&autoplay=false`;
+  return `https://clips.twitch.tv/embed?clip=${encodeURIComponent(slug)}&parent=localhost&parent=127.0.0.1&autoplay=false`;
 }
 
 function getYoutubeEmbedUrl(youtubeUrl) {
@@ -83,8 +75,16 @@ export async function renderClipDetail(container, clipId) {
       html += `
         <div class="section-card mb-4" style="padding:0; overflow:hidden; border-radius: var(--radius-lg); background:#000; border: 1px solid var(--border-subtle);">
           <div style="position:relative; padding-bottom:56.25%; height:0; width:100%;">
-            <iframe src="${twitchEmbedUrl}" height="100%" width="100%" style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" allowfullscreen="true"></iframe>
+            <iframe src="${twitchEmbedUrl}" height="100%" width="100%" style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" allowfullscreen="true" referrerpolicy="no-referrer"></iframe>
           </div>
+          ${currentClip.twitch_url ? `
+            <div style="padding:8px 14px; background:rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--border-subtle);">
+              <span style="font-size:12px; color:var(--text-muted);">Clipe da Twitch</span>
+              <a href="${currentClip.twitch_url}" target="_blank" class="btn btn-sm btn-secondary" style="font-size:11px; padding:3px 10px;">
+                Abrir na Twitch ↗
+              </a>
+            </div>
+          ` : ''}
         </div>
       `;
     }
@@ -225,7 +225,7 @@ export async function renderClipDetail(container, clipId) {
             <div class="mb-2"><strong>ID:</strong> ${currentClip.id}</div>
             <div class="mb-2"><strong>Plataforma Base:</strong> ${currentClip.platform || 'Manual'}</div>
             <div class="mb-2"><strong>Criado em:</strong> ${new Date(currentClip.created_at).toLocaleString('pt-BR')}</div>
-            <div class="mb-2"><strong>Game:</strong> ${currentClip.game_id || '-'}</div>
+            <div class="mb-2"><strong>Game:</strong> ${currentClip.game_name || currentClip.game_id || '-'}</div>
           </div>
         </div>
 
