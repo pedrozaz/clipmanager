@@ -50,10 +50,15 @@ pub async fn create_clip(
                 if let Ok(mut stmt) = conn.prepare("SELECT key, value FROM settings WHERE key IN ('twitch_client_id', 'twitch_client_secret')") {
                     if let Ok(rows) = stmt.query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, Option<String>>(1)?))) {
                         for (k, v) in rows.flatten() {
-                            match k.as_str() {
-                                "twitch_client_id" => cid = v,
-                                "twitch_client_secret" => csec = v,
-                                _ => {}
+                            if let Some(val) = v {
+                                let trimmed = val.trim().to_string();
+                                if !trimmed.is_empty() {
+                                    match k.as_str() {
+                                        "twitch_client_id" => cid = Some(trimmed),
+                                        "twitch_client_secret" => csec = Some(trimmed),
+                                        _ => {}
+                                    }
+                                }
                             }
                         }
                     }

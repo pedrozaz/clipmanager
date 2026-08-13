@@ -33,11 +33,16 @@ pub async fn import_twitch_clips(
         let mut uname = None;
 
         for (k, v) in rows.flatten() {
-            match k.as_str() {
-                "twitch_client_id" => cid = v,
-                "twitch_client_secret" => csec = v,
-                "twitch_username" => uname = v,
-                _ => {}
+            if let Some(val) = v {
+                let trimmed = val.trim().to_string();
+                if !trimmed.is_empty() {
+                    match k.as_str() {
+                        "twitch_client_id" => cid = Some(trimmed),
+                        "twitch_client_secret" => csec = Some(trimmed),
+                        "twitch_username" => uname = Some(trimmed),
+                        _ => {}
+                    }
+                }
             }
         }
 
