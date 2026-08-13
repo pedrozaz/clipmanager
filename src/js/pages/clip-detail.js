@@ -7,22 +7,7 @@ import { showToast } from '../components/toast.js';
 let currentClip = null;
 let allCategories = [];
 
-function getTwitchMp4Url(clip) {
-  const thumb = clip.thumbnail_url || '';
-  if (!thumb) return null;
 
-  const match = thumb.match(/^(https:\/\/[^?]+)-preview-[0-9x]+\.(?:jpg|jpeg|png)$/i);
-  if (match && match[1]) {
-    return match[1] + '.mp4';
-  }
-
-  const idx = thumb.indexOf('-preview');
-  if (idx !== -1) {
-    return thumb.substring(0, idx) + '.mp4';
-  }
-
-  return null;
-}
 
 function getTwitchParents() {
   const parents = new Set(['localhost', '127.0.0.1', 'tauri.localhost']);
@@ -89,27 +74,17 @@ export async function renderClipDetail(container, clipId) {
   const totalViews = twitchViews + youtubeViews;
   const clipCategories = (allCategories || []).filter(c => currentClip.category_ids && currentClip.category_ids.includes(c.id));
   
-  const twitchMp4Url = getTwitchMp4Url(currentClip);
   const twitchEmbedUrl = getTwitchEmbedUrl(currentClip);
   const ytEmbedUrl = getYoutubeEmbedUrl(currentClip.youtube_url);
 
   const renderMediaPlayers = () => {
     let html = '';
-    if (twitchMp4Url || twitchEmbedUrl) {
+    if (twitchEmbedUrl) {
       html += `
         <div class="section-card mb-4" style="padding:0; overflow:hidden; border-radius: var(--radius-lg); background:#000; border: 1px solid var(--border-subtle);">
-          ${twitchMp4Url ? `
-            <div style="position:relative; width:100%; background:#000; display:flex; align-items:center; justify-content:center;">
-              <video controls style="width:100%; max-height:540px; border-radius: var(--radius-lg);" poster="${currentClip.thumbnail_url || ''}" preload="metadata">
-                <source src="${twitchMp4Url}" type="video/mp4">
-                <iframe src="${twitchEmbedUrl}" height="100%" width="100%" style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" allowfullscreen="true" referrerpolicy="no-referrer"></iframe>
-              </video>
-            </div>
-          ` : `
-            <div style="position:relative; padding-bottom:56.25%; height:0; width:100%;">
-              <iframe src="${twitchEmbedUrl}" height="100%" width="100%" style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" allowfullscreen="true" referrerpolicy="no-referrer"></iframe>
-            </div>
-          `}
+          <div style="position:relative; padding-bottom:56.25%; height:0; width:100%;">
+            <iframe src="${twitchEmbedUrl}" height="100%" width="100%" style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" allowfullscreen="true" referrerpolicy="no-referrer"></iframe>
+          </div>
           ${currentClip.twitch_url ? `
             <div style="padding:8px 14px; background:rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--border-subtle);">
               <span style="font-size:12px; color:var(--text-muted);">Clipe da Twitch</span>
@@ -138,6 +113,8 @@ export async function renderClipDetail(container, clipId) {
     }
     return html;
   };
+
+  const clipUrl = currentClip.twitch_url || currentClip.youtube_url || '';
 
   container.innerHTML = `
     <div class="page-header d-flex justify-content-between">
@@ -172,11 +149,11 @@ export async function renderClipDetail(container, clipId) {
           </div>
           
           <div class="form-group">
-            <label>URL Original (Twitch)</label>
+            <label>URL Original</label>
             <div class="d-flex gap-2">
-              <input type="text" class="form-input" value="${currentClip.twitch_url || ''}" readonly>
-              ${currentClip.twitch_url ? `<a href="${currentClip.twitch_url}" target="_blank" class="btn btn-secondary">Abrir</a>` : ''}
-              ${currentClip.twitch_url ? `<button class="btn btn-secondary copy-btn" data-val="${currentClip.twitch_url}">Copiar</button>` : ''}
+              <input type="text" class="form-input" value="${clipUrl}" placeholder="Nenhum link associado" readonly>
+              ${clipUrl ? `<a href="${clipUrl}" target="_blank" class="btn btn-secondary">Abrir</a>` : ''}
+              ${clipUrl ? `<button class="btn btn-secondary copy-btn" data-val="${clipUrl}">Copiar</button>` : ''}
             </div>
           </div>
 

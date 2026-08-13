@@ -5,26 +5,130 @@ use rusqlite::params;
 use tauri::State;
 
 #[tauri::command]
-pub fn create_clip(
+pub async fn create_clip(
     state: State<'_, DbState>,
     title: String,
     twitch_url: Option<String>,
+    youtube_url: Option<String>,
+    thumbnail_url: Option<String>,
     clip_date: Option<String>,
     status: Option<String>,
     notes: Option<String>,
 ) -> Result<Clip> {
+    let status_val = status.unwrap_or_else(|| "Novo".to_string());
+
+    let mut final_twitch_clip_id: Option<String> = None;
+    let mut final_thumb: Option<String> = thumbnail_url;
+    let mut final_game_name: Option<String> = None;
+    let mut final_duration: Option<i64> = None;
+    let mut final_views: i64 = 0;
+
+    if let Some(ref url) = twitch_url {
+        let slug = if let Some(pos) = url.find("clips.twitch.tv/") {
+            let rest = &url[pos + "clips.twitch.tv/".len()..];
+            rest.split(['?', '/', '&', '#']).next().unwrap_or("").to_string()
+        } else if let Some(pos) = url.find("/clip/") {
+            let rest = &url[pos + "/clip/".len()..];
+            rest.split(['?', '/', '&', '#']).next().unwrap_or("").to_string()
+        } else if !url.contains('/') && url.len() > 5 {
+            url.clone()
+        } else {
+            String::new()
+        };
+
+        if !slug.is_empty() {
+            final_twitch_clip_id = Some(slug.clone());
+
+            // Tenta buscar credenciais da Twitch do banco e libera a trava antes do await
+            let creds = {
+                let conn = state
+                    .db
+                    .lock()
+                    .map_err(|e| AppError::Database(e.to_string()))?;
+                let mut cid = None;
+                let mut csec = None;
+                if let Ok(mut stmt) = conn.prepare("SELECT key, value FROM settings WHERE key IN ('twitch_client_id', 'twitch_client_secret')") {
+                    if let Ok(rows) = stmt.query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, Option<String>>(1)?))) {
+                        for (k, v) in rows.flatten() {
+                            match k.as_str() {
+                                "twitch_client_id" => cid = v,
+                                "twitch_client_secret" => csec = v,
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                (cid, csec)
+            };
+
+            if let (Some(client_id), Some(client_secret)) = creds {
+                let mut twitch = crate::api::twitch::TwitchClient::new(client_id, client_secret);
+                if twitch.authenticate().await.is_ok() {
+                    if let Ok(Some(clip_info)) = twitch.get_clip_by_id(&slug).await {
+                        if final_thumb.is_none() && !clip_info.thumbnail_url.is_empty() {
+                            final_thumb = Some(clip_info.thumbnail_url);
+                        }
+                        if !clip_info.game_name.is_empty() {
+                            final_game_name = Some(clip_info.game_name);
+                        }
+                        final_views = clip_info.view_count;
+                        final_duration = Some(clip_info.duration.round() as i64);
+                    }
+                }
+            }
+        }
+    }
+
+    if let Some(ref yt_url) = youtube_url {
+        let yt_id = if let Some(pos) = yt_url.find("shorts/") {
+            let rest = &yt_url[pos + "shorts/".len()..];
+            rest.split(['?', '/', '&', '#']).next().unwrap_or("").to_string()
+        } else if let Some(pos) = yt_url.find("youtu.be/") {
+            let rest = &yt_url[pos + "youtu.be/".len()..];
+            rest.split(['?', '/', '&', '#']).next().unwrap_or("").to_string()
+        } else if let Some(pos) = yt_url.find("v=") {
+            let rest = &yt_url[pos + "v=".len()..];
+            rest.split(['?', '/', '&', '#']).next().unwrap_or("").to_string()
+        } else {
+            String::new()
+        };
+
+        if !yt_id.is_empty() && final_thumb.is_none() {
+            final_thumb = Some(format!("https://img.youtube.com/vi/{}/hqdefault.jpg", yt_id));
+        }
+    }
+
     let conn = state
         .db
         .lock()
         .map_err(|e| AppError::Database(e.to_string()))?;
-    let status_val = status.unwrap_or_else(|| "novo".to_string());
 
     conn.execute(
-        "INSERT INTO clips (title, twitch_url, clip_date, status, notes) VALUES (?1, ?2, ?3, ?4, ?5)",
-        params![title, twitch_url, clip_date, status_val, notes],
+        "INSERT INTO clips (twitch_clip_id, title, twitch_url, youtube_url, thumbnail_url, duration, views, game_name, clip_date, status, notes) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+        params![final_twitch_clip_id, title, twitch_url, youtube_url, final_thumb, final_duration, final_views, final_game_name, clip_date, status_val, notes],
     )?;
 
     let id = conn.last_insert_rowid();
+
+    // Auto-categorizar pelo jogo se o nome do jogo for conhecido
+    if let Some(ref gname) = final_game_name {
+        if !gname.is_empty() {
+            const CATEGORY_COLORS: &[&str] = &[
+                "#a78bfa", "#34d399", "#f59e0b", "#60a5fa", "#f472b6", "#fb923c", "#2dd4bf", "#818cf8",
+            ];
+            let cat_id = match conn.query_row("SELECT id FROM categories WHERE name = ?1", params![gname], |row| row.get::<_, i64>(0)) {
+                Ok(cid) => cid,
+                Err(_) => {
+                    let color_idx = gname.len() % CATEGORY_COLORS.len();
+                    let color = CATEGORY_COLORS[color_idx];
+                    let _ = conn.execute("INSERT INTO categories (name, color) VALUES (?1, ?2)", params![gname, color]);
+                    conn.last_insert_rowid()
+                }
+            };
+            let _ = conn.execute("INSERT OR IGNORE INTO clip_categories (clip_id, category_id) VALUES (?1, ?2)", params![id, cat_id]);
+        }
+    }
+
     get_clip_internal(&conn, id)
 }
 

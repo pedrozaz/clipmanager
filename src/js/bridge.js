@@ -1,8 +1,15 @@
 const invoke = window.__TAURI__ ? window.__TAURI__.core.invoke : async (cmd, args) => console.log(`[Mock Invoke] ${cmd}`, args);
 
 export const api = {
-  // Clips
-  createClip: (clipData) => invoke("create_clip", clipData),
+  createClip: (d) => invoke("create_clip", {
+    title: d.title ?? '',
+    twitchUrl: d.twitch_url || d.twitchUrl || null,
+    youtubeUrl: d.youtube_url || d.youtubeUrl || null,
+    thumbnailUrl: d.thumbnail_url || d.thumbnailUrl || null,
+    clipDate: d.clip_date || d.clipDate || null,
+    status: d.status ?? 'Novo',
+    notes: d.notes ?? null,
+  }),
   getClip: (id) => invoke("get_clip", { id: Number(id) }),
   listClips: (params = {}) => invoke("list_clips", {
     filterStatus: params.filterStatus || null,

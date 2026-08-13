@@ -29,8 +29,14 @@ struct TwitchUser {
 }
 
 #[derive(Debug, Deserialize)]
+struct TwitchPagination {
+    cursor: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
 struct TwitchClipsResponse {
     data: Vec<TwitchClipData>,
+    pagination: Option<TwitchPagination>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -179,44 +185,94 @@ impl TwitchClient {
             .as_ref()
             .ok_or_else(|| AppError::Api("Twitch client not authenticated".to_string()))?;
 
-        let res = self
-            .http
-            .get("https://api.twitch.tv/helix/clips")
-            .query(&[
-                ("broadcaster_id", broadcaster_id),
-                ("started_at", started_at),
-                ("first", "100"),
-            ])
-            .header("Client-ID", &self.client_id)
-            .header("Authorization", format!("Bearer {token}"))
-            .send()
-            .await?;
+        let mut all_clips = Vec::new();
+        let mut cursor: Option<String> = None;
 
-        if !res.status().is_success() {
-            let err_text = res.text().await.unwrap_or_default();
-            return Err(AppError::Api(format!(
-                "Twitch get clips failed: {err_text}"
-            )));
+        for _ in 0..5 {
+            let mut query_params = vec![
+                ("broadcaster_id", broadcaster_id.to_string()),
+                ("started_at", started_at.to_string()),
+                ("first", "100".to_string()),
+            ];
+            if let Some(ref c) = cursor {
+                query_params.push(("after", c.clone()));
+            }
+
+            let res = self
+                .http
+                .get("https://api.twitch.tv/helix/clips")
+                .query(&query_params)
+                .header("Client-ID", &self.client_id)
+                .header("Authorization", format!("Bearer {token}"))
+                .send()
+                .await?;
+
+            if !res.status().is_success() {
+                let err_text = res.text().await.unwrap_or_default();
+                return Err(AppError::Api(format!("Twitch get clips failed: {err_text}")));
+            }
+
+            let clips_res: TwitchClipsResponse = res.json().await?;
+            let next_cursor = clips_res.pagination.as_ref().and_then(|p| p.cursor.clone());
+
+            all_clips.extend(clips_res.data);
+
+            if next_cursor.is_none() || next_cursor == cursor {
+                break;
+            }
+            cursor = next_cursor;
         }
 
-        let clips_res: TwitchClipsResponse = res.json().await?;
-        let mut clips = clips_res.data;
-
-        let game_ids: Vec<String> = clips
+        let game_ids: Vec<String> = all_clips
             .iter()
             .map(|c| c.game_id.clone())
             .filter(|id| !id.is_empty())
             .collect();
 
         if let Ok(games_map) = self.get_games_by_ids(&game_ids).await {
-            for clip in &mut clips {
+            for clip in &mut all_clips {
                 if let Some(name) = games_map.get(&clip.game_id) {
                     clip.game_name = name.clone();
                 }
             }
         }
 
-        Ok(clips)
+        Ok(all_clips)
+    }
+
+    pub async fn get_clip_by_id(&self, clip_id: &str) -> Result<Option<TwitchClipData>> {
+        let token = self
+            .access_token
+            .as_ref()
+            .ok_or_else(|| AppError::Api("Twitch client not authenticated".to_string()))?;
+
+        let res = self
+            .http
+            .get("https://api.twitch.tv/helix/clips")
+            .query(&[("id", clip_id)])
+            .header("Client-ID", &self.client_id)
+            .header("Authorization", format!("Bearer {token}"))
+            .send()
+            .await?;
+
+        if !res.status().is_success() {
+            return Ok(None);
+        }
+
+        let clips_res: TwitchClipsResponse = res.json().await?;
+        let mut clips = clips_res.data;
+        if let Some(mut clip) = clips.pop() {
+            if !clip.game_id.is_empty() {
+                if let Ok(games_map) = self.get_games_by_ids(&[clip.game_id.clone()]).await {
+                    if let Some(name) = games_map.get(&clip.game_id) {
+                        clip.game_name = name.clone();
+                    }
+                }
+            }
+            return Ok(Some(clip));
+        }
+
+        Ok(None)
     }
 }
 

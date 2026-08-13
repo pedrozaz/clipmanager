@@ -193,7 +193,8 @@ function handleImportTwitch() {
           const result = await api.importTwitchClips(parseInt(limit));
           const count = result ? (result.imported ?? result.count ?? 0) : 0;
           showToast(`Importação concluída: ${count} novos clipes`, 'success');
-          loadClips();
+          await loadCategoriesMap();
+          await loadClips();
         } catch(e) {
           console.error('Import Twitch error:', e);
           const errorMsg = typeof e === 'string' ? e : (e?.message || JSON.stringify(e));
@@ -208,29 +209,56 @@ function handleNewClip() {
   showModal({
     title: 'Adicionar Clipe Manual',
     body: `
-      <div class="form-group">
-        <label>Título</label>
-        <input type="text" id="manual-clip-title" class="form-input">
+      <div class="form-group mb-3">
+        <label class="form-label">Título do Clipe</label>
+        <input type="text" id="manual-clip-title" class="form-input" placeholder="Ex: Jogada incrível no Valorant">
       </div>
-      <div class="form-group">
-        <label>URL Original</label>
-        <input type="text" id="manual-clip-url" class="form-input">
+      <div class="form-group mb-3">
+        <label class="form-label">URL do Clipe (Twitch ou YouTube)</label>
+        <input type="text" id="manual-clip-url" class="form-input" placeholder="https://clips.twitch.tv/... ou https://youtube.com/shorts/...">
       </div>
     `,
     buttons: [
       { text: 'Cancelar', class: 'btn btn-secondary', close: true },
-      { text: 'Criar', class: 'btn btn-primary', onClick: async (modal) => {
-        const title = document.getElementById('manual-clip-title').value;
-        const url = document.getElementById('manual-clip-url').value;
-        if(title) {
-          try {
-            await api.createClip({ title, original_url: url, status: 'Novo' });
-            showToast('Clipe criado', 'success');
-            modal.close();
-            loadClips();
-          } catch(e) {
-            showToast('Erro ao criar', 'error');
+      { text: 'Criar Clipe', class: 'btn btn-primary', onClick: async (modal) => {
+        const title = (document.getElementById('manual-clip-title').value || '').trim();
+        const url = (document.getElementById('manual-clip-url').value || '').trim();
+        if(!title) {
+          showToast('Informe o título do clipe', 'error');
+          return;
+        }
+
+        let twitch_url = null;
+        let youtube_url = null;
+        let thumbnail_url = null;
+
+        if (url) {
+          if (url.includes('youtube.com') || url.includes('youtu.be')) {
+            youtube_url = url;
+            const ytMatch = url.match(/(?:youtube\.com\/shorts\/|youtu\.be\/|youtube\.com\/watch\?v=)([A-Za-z0-9_-]+)/);
+            if (ytMatch && ytMatch[1]) {
+              thumbnail_url = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+            }
+          } else {
+            twitch_url = url;
           }
+        }
+
+        try {
+          await api.createClip({
+            title,
+            twitch_url,
+            youtube_url,
+            thumbnail_url,
+            status: 'Novo'
+          });
+          showToast('Clipe criado com sucesso', 'success');
+          modal.close();
+          await loadCategoriesMap();
+          await loadClips();
+        } catch(e) {
+          console.error('Error creating clip:', e);
+          showToast('Erro ao criar clipe: ' + (e.message || e), 'error');
         }
       }}
     ]
