@@ -1,4 +1,4 @@
-# 🎬 Assuna - Clip Manager (v2.0.0)
+# 🎬 Assuna - Clip Manager (v3.0.1)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE-MIT)
 [![Tauri 2.x](https://img.shields.io/badge/Tauri-2.x-blue.svg)](https://tauri.app)
@@ -10,9 +10,11 @@
 
 ## ✨ Principais Funcionalidades
 
-- **🟣 Importação Automática da Twitch:** Conexão OAuth2 Client Credentials com a Twitch Helix API para buscar clipes automaticamente com miniaturas e datas.
-- **▶️ Players de Vídeo Integrados:** Reproduza seus clipes da Twitch (16:9) e previews do YouTube Shorts (9:16) diretamente na aplicação sem precisar abrir o navegador.
-- **📚 Biblioteca Interativa & Ações Rápidas:** Busca em tempo real, filtros por status (*Novo, Editando, Editado, Postado, Descartado*), categorias personalizadas, exclusão rápida no card, exclusão em massa e visualização em Grade ou Tabela.
+- **🟣 Importação Paginada da Twitch:** Conexão OAuth2 Client Credentials com a Twitch Helix API e paginação por cursor (`after`) para buscar todos os clipes recentes com miniaturas e datas.
+- **🏷️ Auto-Categorização por Jogo:** Resolução automática do jogo (ex: *VALORANT, Just Chatting*) e criação determinística de categorias coloridas para cada clipe importado ou adicionado manualmente.
+- **▶️ Players de Vídeo Integrados (HTTPS Scheme):** Reproduza seus clipes da Twitch (16:9) e previews do YouTube Shorts (9:16) diretamente na aplicação no Windows (WebView2) e Linux sem bloqueios de embed.
+- **🎨 Gerenciamento de Categorias com Color Picker:** Seletor de cores nativo integrado para criação e edição rápida de categorias personalizadas.
+- **📚 Biblioteca Interativa & Ações Rápidas:** Busca em tempo real, filtros por status (*Novo, Editando, Editado, Postado, Descartado*), filtro por categoria, exclusão rápida no card, exclusão em massa e visualização em Grade ou Tabela.
 - **🔴 Métricas Consolidadas do YouTube:** Acompanhe visualizações, curtidas e comentários de Shorts via YouTube Data API v3 com sincronização periódica.
 - **🎮 Vínculo de Partidas do Valorant (Henrik API):** Associe partidas competitivas a cada clipe com exibição detalhada de Mapa, Agente, KDA, Placar e badge de Vitória/Derrota.
 - **📊 Dashboard de Analytics Avançado:**
@@ -20,6 +22,7 @@
   - Pipeline de produção visual com distribuição por status.
   - **Somatória de Estatísticas do Valorant:** Cálculo automático da Taxa de Vitória (Win Rate %), K/D Ratio, Abates Totais (Kills), Mortes (Deaths), Assistências (Assists) e Agente Favorito de todos os clipes vinculados.
 - **🤖 Promoção Automática de Status:** Ao adicionar o link de um YouTube Short em um clipe, ele é automaticamente promovido para o status *Postado*.
+- **🔄 Auto-Updater Integrado:** Verificação de novas versões com fallback transparente para a API de Releases do GitHub.
 - **💾 Backup & Exportação:** Exportação/Importação completa em JSON e relatórios tabulares em formato CSV.
 - **🔒 Privativo & Local First:** Armazenamento local via SQLite (`rusqlite` com WAL mode) mantendo 100% dos dados na sua máquina.
 
@@ -27,9 +30,9 @@
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **Backend:** Rust (Edition 2024), SQLite bundled com WAL mode, Reqwest HTTP, Tokio, Serde, Chrono.
+- **Backend:** Rust (Edition 2024), SQLite bundled com WAL mode, Reqwest HTTP, Tokio, Serde, Chrono, `tauri-plugin-updater`.
 - **Frontend:** HTML5 Semântico, Vanilla CSS (Dark Mode Design System inspirado no Spotify e Linear), Vanilla JavaScript ES6+.
-- **Desktop Framework:** Tauri 2.x (Bridge IPC com comandos customizados).
+- **Desktop Framework:** Tauri 2.x (Bridge IPC com comandos customizados e `useHttpsScheme` nativo).
 - **Gráficos:** Chart.js 4.4 (Bundle local offline).
 - **Gerenciador de Pacotes:** `pnpm`.
 
