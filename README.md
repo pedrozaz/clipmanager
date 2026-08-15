@@ -1,4 +1,4 @@
-# 🎬 Assuna - Clip Manager (v3.0.1)
+# 🎬 [Assuna](https://www.twitch.tv/assunavlr) - Clip Manager (v3.0.1)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE-MIT)
 [![Tauri 2.x](https://img.shields.io/badge/Tauri-2.x-blue.svg)](https://tauri.app)
